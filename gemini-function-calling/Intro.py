@@ -69,6 +69,6 @@ st.markdown(
 
 st.markdown(
     """
-    Kudos to [Kristopher Overholt](https://github.com/koverholt) 🙌 for making this sample possible!
+    Kudos to [Kristopher Overholt](https://github.com/koverholt) and [Param Singh](https://github.com/paramrsingh) 🙌 for making this sample possible!
     """
 )
