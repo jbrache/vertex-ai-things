@@ -10,11 +10,11 @@ gcloud iam service-accounts create $SA_NAME \
   --description="$SA_DESCRIPTION" \
   --display-name="$SA_DISPLAY_NAME"
 
-!gcloud projects add-iam-policy-binding {PROJECT_ID} \
+gcloud projects add-iam-policy-binding {PROJECT_ID} \
   --member=f"serviceAccount:{SA_NAME}@{PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.dataViewer"
 
-!gcloud projects add-iam-policy-binding {PROJECT_ID} \
+gcloud projects add-iam-policy-binding {PROJECT_ID} \
   --member="serviceAccount:{SA_NAME}@{PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
 
