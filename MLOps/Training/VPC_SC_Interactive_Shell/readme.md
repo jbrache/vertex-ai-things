@@ -14,7 +14,7 @@
 # limitations under the License.
 ```
 
-# Vertex Training VPC SC Testing
+# Vertex Training: Interactive Shell with VPC-SC + VPC Peering
 
 | Author(s) |
 | --- |
