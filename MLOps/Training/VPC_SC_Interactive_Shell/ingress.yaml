@@ -4,10 +4,10 @@
     # identityType: ANY_IDENTITY
     # *OR*
     identities:
-    - serviceAccount:service-1011039217596@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
-    - serviceAccount:service-1011039217596@gcp-sa-aiplatform.iam.gserviceaccount.com
-    - serviceAccount:1011039217596-compute@developer.gserviceaccount.com
-    - user:jose@jbrache.altostrat.com
+    - serviceAccount:service-[YOUR_PROJECT_NUMBER]@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
+    - serviceAccount:service-[YOUR_PROJECT_NUMBER]@gcp-sa-aiplatform.iam.gserviceaccount.com
+    - serviceAccount:[YOUR_PROJECT_NUMBER]-compute@developer.gserviceaccount.com
+    - user:[YOUR_USER_EMAIL]  # Replace with your email
     sources:
     # - resource: projects/project
     # *OR*
@@ -30,4 +30,4 @@
       methodSelectors:
       - method: "*"
     resources:
-    - projects/1011039217596
+    - projects/[YOUR_PROJECT_NUMBER]
