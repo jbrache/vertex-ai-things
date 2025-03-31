@@ -1,0 +1,21 @@
+# https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference
+- egressTo:
+    operations:
+    - serviceName: "*"
+      # methodSelectors:
+      # - method: "*"
+      # *OR*
+      # - permission: permission
+    resources:
+    # - projects/project
+    - "*"
+    # *OR*
+    # externalResources:
+    # - external-resource-path
+  egressFrom:
+    # ANY_IDENTITY | ANY_USER_ACCOUNT | ANY_SERVICE_ACCOUNT
+    identityType: ANY_IDENTITY
+    # *OR*
+    # identities:
+    # - serviceAccount:service-account
+    # - user:user-account

@@ -1,0 +1,10 @@
+workerPoolSpecs:
+  - machineSpec:
+      machineType: n2-standard-4
+    replicaCount: 1
+    containerSpec:
+      imageUri: [your-container-image-uri]  # Replace with your container image URI
+      args:
+        --sleep=1200s
+serviceAccount: [YOUR_PROJECT_NUMBER]-compute@developer.gserviceaccount.com
+network: projects/[YOUR_PROJECT_NUMBER]/global/networks/[NETWORK_NAME]  # Replace with your network name

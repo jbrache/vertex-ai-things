@@ -1,0 +1,33 @@
+# https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#ingress-rules-reference
+- ingressFrom:
+    # ANY_IDENTITY | ANY_USER_ACCOUNT | ANY_SERVICE_ACCOUNT
+    # identityType: ANY_IDENTITY
+    # *OR*
+    identities:
+    - serviceAccount:service-1011039217596@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
+    - serviceAccount:service-1011039217596@gcp-sa-aiplatform.iam.gserviceaccount.com
+    - serviceAccount:1011039217596-compute@developer.gserviceaccount.com
+    - user:jose@jbrache.altostrat.com
+    sources:
+    # - resource: projects/project
+    # *OR*
+    - accessLevel: "*"
+  ingressTo:
+    operations:
+    - serviceName: storage.googleapis.com
+      methodSelectors:
+      - method: "*"
+    - serviceName: bigquery.googleapis.com
+      methodSelectors:
+      - method: "*"
+    - serviceName: aiplatform.googleapis.com
+      methodSelectors:
+      - method: "*"
+    - serviceName: dns.googleapis.com
+      methodSelectors:
+      - method: "*"
+    - serviceName: artifactregistry.googleapis.com
+      methodSelectors:
+      - method: "*"
+    resources:
+    - projects/1011039217596
