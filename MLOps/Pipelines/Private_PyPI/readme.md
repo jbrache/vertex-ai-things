@@ -9,5 +9,5 @@ This guide shows how to set up configure a private [Artifact Registry Python rep
 2. Once you've configured your private Artifact Registry Python repository and custom container base image move to: [1_Vertex_AI_Pipelines_Introduction.ipynb](1_Vertex_AI_Pipelines_Introduction.ipynb)
 
 ## Resources
-* One of the best resources for getting started Vertex AI Pipelines: [Orchestration With Pipelines](https://github.com/statmike/vertex-ai-mlops/tree/main/MLOps/Pipelines)
+* One of the best resources for getting started with Vertex AI Pipelines: [Orchestration With Pipelines](https://github.com/statmike/vertex-ai-mlops/tree/main/MLOps/Pipelines)
 * [Using private Python packages inside a Vertex AI kfp component](https://medium.com/@islam.sadeka/using-private-python-packages-inside-a-vertex-ai-kfp-component-45020f06e44e)
