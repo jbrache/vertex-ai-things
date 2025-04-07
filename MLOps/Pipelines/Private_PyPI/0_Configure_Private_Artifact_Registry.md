@@ -45,7 +45,7 @@ To get started using Vertex AI, you must have an existing Google Cloud project a
 Learn more about [setting up a project and a development environment](https://cloud.google.com/vertex-ai/docs/start/cloud-environment).
 
 ```sh
-export PROJECT_ID="ds-dev-jb02-psci"
+export PROJECT_ID="ds-dev-jb02-pypi"
 # For the Artifact Registry Python repository
 export REPOSITORY="python-repo-vertex"
 export LOCATION="us-central1"
@@ -58,6 +58,30 @@ export PRIVATE_REPO="kfp-base-images"
 
 ```sh
 gcloud config set project $PROJECT_ID
+```
+Set environment variable for Project Number
+```sh
+export PROJECT_NUMBER="$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")"
+```
+
+## 0-1. Enable APIs
+The following APIs are enabled in this demo:
+1. [Enable the Vertex AI API](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com)
+2. [Enable the Cloud Build API](https://console.cloud.google.com/flows/enableapi?apiid=cloudbuild.googleapis.com)
+3. [Enable the Artifact Registry API](https://console.cloud.google.com/flows/enableapi?apiid=artifactregistry.googleapis.com): You must enable the Artifact Registry API for your project. You will store your custom training container in Artifact Registry. [Learn more about Enabling the Artifact Registry service](https://cloud.google.com/artifact-registry/docs/enable-service)
+
+```sh
+############# Enable the APIs for Vertex AI Project ########################
+gcloud services enable --project=$PROJECT_ID aiplatform.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
+```
+
+## 0-2. IAM Grants
+Grant storate object viewer role to the default compute engine service account.
+
+```sh
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+    --role="roles/storage.objectViewer"
 ```
 
 # 1-0. Create a repository
@@ -289,6 +313,7 @@ gcloud artifacts repositories --project=${PROJECT_ID} list
 ```
 
 ### 5-1-2. Build and push the custom docker container image by using Cloud Build
+
 Build and push a Docker image with Cloud Build
 ```sh
 cd $CONTAINER_DIR && gcloud builds submit --timeout=1800s --project=${PROJECT_ID} --region=${REGION} --tag ${BASE_IMAGE}
