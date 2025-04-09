@@ -10,6 +10,7 @@ The following diagram describes how Vertex AI Pipelines can access a private Art
 ## Get Started
 1. Setup the pre-requisites with: [0_Configure_Private_Artifact_Registry.md](0_Configure_Private_Artifact_Registry.md)
 2. Once you've configured your private Artifact Registry Python repository and custom container base image move to: [1_Vertex_AI_Pipelines_Introduction.ipynb](1_Vertex_AI_Pipelines_Introduction.ipynb)
+3. [Optional] If you want to enable VPC Service Controls with Vertex AI, and access your private Artifact Registry Python repository in the previous step move to: [2_VPC_SC_Vertex_AI_Pipelines_Setup.md](2_VPC_SC_Vertex_AI_Pipelines_Setup.md)
 
 ## Resources
 * One of the best resources for getting started with Vertex AI Pipelines: [Orchestration With Pipelines](https://github.com/statmike/vertex-ai-mlops/tree/main/MLOps/Pipelines)
