@@ -55,9 +55,10 @@ gcloud organizations list
 export ORGANIZATION_ID='280712296376' # Example: If your organization ID is 280712296376, replace with your actual organization ID.
 export POLICY_TITLE='vpcsc_folder_perimeter' # This is the title for the access policy you are creating. You can name it anything that makes sense for your use case.
 export SCOPE='folders/520712946030' # This is the scope for the access policy. In this case, it is a folder with ID 520712946030. Adjust this to your specific folder or resource for your Vertex AI Project.
-export PRINCIPAL='user:ldap@domain.com' # This is the user or service account that will have access to the access policy.
-export ROLE='roles/accesscontextmanager.policyAdmin'
+export PRINCIPAL='ldap@domain.com' # Change this to the user that will have access to the access policy.
+export ROLE='roles/accesscontextmanager.policyAdmin' # This role will be granted on the principal
 export PROJECT_ID='ds-dev-jb02-pypi' # Project ID of the project where you want to enable services and create the perimeter. Replace it with your actual project ID.
+export SERVICE_ACCOUNT_VERTEX="vertex-ai-sa@$PROJECT_ID.iam.gserviceaccount.com" # Use the service account being used for Vertex AI Pipelines
 ```
 
 ```sh
@@ -99,7 +100,7 @@ export POLICY="accessPolicies/$POLICY_NUMBER"
 Add IAM Binding to user
 ```sh
 gcloud access-context-manager policies add-iam-policy-binding \
-  $POLICY --member=$PRINCIPAL --role=$ROLE
+  $POLICY --member=user:$PRINCIPAL --role=$ROLE
 ```
 
 ## 1-2. Create Perimeter for in scope project
@@ -125,10 +126,11 @@ cat > ingress.yaml <<EOF
     identities:
     - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
     - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com
-    - serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com
-    - $PRINCIPAL
+    # - serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com
+    - serviceAccount:$SERVICE_ACCOUNT_VERTEX
+    - user:$PRINCIPAL
     sources:
-    # - resource: projects/386240090016
+    # - resource: projects/project
     # *OR*
     - accessLevel: "*"
   ingressTo:
@@ -136,16 +138,7 @@ cat > ingress.yaml <<EOF
     - serviceName: storage.googleapis.com
       methodSelectors:
       - method: "*"
-    - serviceName: bigquery.googleapis.com
-      methodSelectors:
-      - method: "*"
     - serviceName: aiplatform.googleapis.com
-      methodSelectors:
-      - method: "*"
-    - serviceName: dns.googleapis.com
-      methodSelectors:
-      - method: "*"
-    - serviceName: compute.googleapis.com
       methodSelectors:
       - method: "*"
     - serviceName: artifactregistry.googleapis.com
@@ -153,6 +146,7 @@ cat > ingress.yaml <<EOF
       - method: "*"
     resources:
     - projects/$PROJECT_NUMBER
+  title: "Ingress to Vertex AI, Artifact Registry and Cloud Storage"
 EOF
 ```
 
@@ -161,25 +155,26 @@ Create the Egress Rule
 cat > egress.yaml <<EOF
 # https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference
 - egressTo:
-    operations:
-    - serviceName: "*"
+    # operations:
+    # - serviceName: "*"
       # methodSelectors:
       # - method: "*"
       # *OR*
       # - permission: permission
-    resources:
+    # resources:
     # - projects/project
-    - "*"
+    # - "*"
     # *OR*
     # externalResources:
     # - external-resource-path
   egressFrom:
     # ANY_IDENTITY | ANY_USER_ACCOUNT | ANY_SERVICE_ACCOUNT
-    identityType: ANY_IDENTITY
+    # identityType: ANY_IDENTITY
     # *OR*
     # identities:
     # - serviceAccount:service-account
     # - user:user-account
+  title: No Egress
 EOF
 ```
 
