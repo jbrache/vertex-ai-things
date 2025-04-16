@@ -124,10 +124,10 @@ cat > ingress.yaml <<EOF
     # identityType: ANY_IDENTITY
     # *OR*
     identities:
-    - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
-    - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com
+    # - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform-cc.iam.gserviceaccount.com
+    # - serviceAccount:service-$PROJECT_NUMBER@gcp-sa-aiplatform.iam.gserviceaccount.com
     # - serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com
-    - serviceAccount:$SERVICE_ACCOUNT_VERTEX
+    # - serviceAccount:$SERVICE_ACCOUNT_VERTEX
     - user:$PRINCIPAL
     sources:
     # - resource: projects/project
