@@ -8,9 +8,13 @@ The following diagram describes how Vertex AI Pipelines can access a private Art
 ![vertex_pipelines_private_pypi](resources/images/vertex_pipelines_private_pypi.png)
 
 ## Get Started
-1. Setup the pre-requisites with: [0_Configure_Private_Artifact_Registry.md](0_Configure_Private_Artifact_Registry.md)
+1. Setup the pre-requisites with: 
+- [0_Configure_Private_Artifact_Registry.md](0_Configure_Private_Artifact_Registry.md)
+- [0_Configure_Remote_Artifact_Registry.md](0_Configure_Remote_Artifact_Registry.md) <- Suggested if you want to use a remote PyPI repository: [PyPI.Org](https://pypi.org/)
 2. Once you've configured your private Artifact Registry Python repository and custom container base image move to: [1_Vertex_AI_Pipelines_Introduction.ipynb](1_Vertex_AI_Pipelines_Introduction.ipynb)
 3. [Optional] If you want to enable VPC Service Controls with Vertex AI, and access your private Artifact Registry Python repository in the previous step move to: [2_VPC_SC_Vertex_AI_Pipelines_Setup.md](2_VPC_SC_Vertex_AI_Pipelines_Setup.md)
+4. **Work in progress**: Create a Squid Proxy
+5. If you are using PSC-I with Vertex AI Pipelines, move to and have set up a Squid Proxy as a [pip proxy server](https://pip.pypa.io/en/latest/user_guide/#using-a-proxy-server) move to: [5_Vertex_AI_Pipelines_PSC_I_Proxy.ipynb](5_Vertex_AI_Pipelines_PSC_I_Proxy.ipynb)
 
 ## Resources
 * One of the best resources for getting started with Vertex AI Pipelines: [Orchestration With Pipelines](https://github.com/statmike/vertex-ai-mlops/tree/main/MLOps/Pipelines)
