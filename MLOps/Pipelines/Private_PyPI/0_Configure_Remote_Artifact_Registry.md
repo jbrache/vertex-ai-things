@@ -30,6 +30,9 @@ Python Package Index (PyPI) is a public repository for Python packages. You can 
 
 A remote repository acts as a proxy for the upstream source so that you have more control over your dependencies. The first time that you request a version of a package, Artifact Registry downloads and caches the package in the remote repository. The next time you request the same package version, Artifact Registry serves the cached copy.
 
+The following diagram describes how Vertex AI Pipelines can access a remote Artifact Registry Python repository without network egress (using VPC Peering or PSC-I):
+![vertex_pipelines_private_pypi](resources/images/vertex_pipelines_remote_pypi.png)
+
 Review the public docs for the latest information on support:
 - [Artifact Registry Python repository](https://cloud.google.com/artifact-registry/docs/python/store-python)
 - [Configure authentication to Artifact Registry for Python package repositories](https://cloud.google.com/artifact-registry/docs/python/authentication)
