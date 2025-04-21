@@ -274,7 +274,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir kfp==2.12.1 pandas google-cloud-aiplatform
+RUN pip install --no-cache-dir kfp pandas google-cloud-aiplatform
 # Used for authenticating to Artifact Registry
 RUN pip install --no-cache-dir keyring keyrings.google-artifactregistry-auth
 
