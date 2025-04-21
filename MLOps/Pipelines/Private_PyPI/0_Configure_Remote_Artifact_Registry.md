@@ -14,7 +14,7 @@
 # limitations under the License.
 ```
 
-# Vertex AI Pipelines: Configure Private Artifact Registry Python Repository and setup KFP Base Image
+# Vertex AI Pipelines: Configure Remote Artifact Registry Python Repository and setup KFP Base Image
 
 | Author(s) |
 | --- |
@@ -28,7 +28,7 @@ This guide shows how to set up configure a [remote PyPI repository](https://clou
 
 Python Package Index (PyPI) is a public repository for Python packages. You can use Artifact Registry to create a remote repositories for your Python packages using the Python Package Index (PyPI) as an external source.
 
-A remote repository acts as a proxy for the upstream source so that you have more control over your dependencies. The first time that you request a version of a package, Artifact Registry downloads and caches the package in the remote repository. The next time you request the same package version, Artifact Registry serves the cached copy.
+A [remote repository](https://cloud.google.com/artifact-registry/docs/repositories/remote-repo) acts as a proxy for the upstream source so that you have more control over your dependencies. The first time that you request a version of a package, Artifact Registry downloads and caches the package in the remote repository. The next time you request the same package version, Artifact Registry serves the cached copy.
 
 The following diagram describes how Vertex AI Pipelines can access a remote Artifact Registry Python repository without network egress (using VPC Peering or PSC-I):
 ![vertex_pipelines_private_pypi](resources/images/vertex_pipelines_remote_pypi.png)
