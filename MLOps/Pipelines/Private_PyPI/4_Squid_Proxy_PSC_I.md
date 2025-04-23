@@ -71,7 +71,7 @@ Here is what we will be deploying and how the traffic flow will work.
 
 1. A [Managed Instance Group](https://cloud.google.com/compute/docs/instance-groups) of Compute Engine VMs.  MIGs perform automatic deployment, updates and repair, minimizing our operational overhead and providing tight integration to GCP Load Balancing.  We will run 3 instances to ensure high availability.
 2. A Load Balancer, configured to send traffic to our proxy VMs.
-3. Our vertex pipelines will be configured to run with an environment variable `https_proxy=[load balancer ip]:3128`.  This instructs HTTP clients running in our pipeline to use the load balancer as a  proxy for all HTTPS requests.
+3. Our vertex pipelines will be configured to run with an environment variable `https_proxy=192.168.10.27:3128`.  This instructs HTTP clients running in our pipeline to use the load balancer as a  proxy for all HTTPS requests.
 
 
 When a new HTTP request is sent, it will take the path depicted in the diagram.
@@ -80,9 +80,9 @@ When a new HTTP request is sent, it will take the path depicted in the diagram.
 2. The request is sent to the proxy and contains a request to connect to one of the on-prem services by name (ex: mypythonstuff.example.com).
 3. The _proxy_ VM - not the HTTP client in Vertex - makes a DNS request to resolve `mypythonstuff.example.com`.
 4. Cloud DNS forwards the query to on-prem and recieves and answer, passing the information back to the proxy VM.
-5. The _proxy_ VM completes the HTTP connection to the resolved IP and either passes the original request along or (in the case of HTTPS) links the incoming client coonnection to the upstream service over an HTTP CONNECT tunnel.
+5. The _proxy_ VM completes the HTTP connection to the resolved IP and either passes the original request along or (in the case of HTTPS) links the incoming client coonnection to the upstream service over an [HTTP CONNECT tunnel](https://en.wikipedia.org/wiki/HTTP_tunnel).
 
-The response from the upstream service is then returned to the client.
+The response from the upstream service is then returned to the client.  With the properly configured proxy variables, Vertex Pipelines can now resolve and reach on-prem services by DNS entry.
 
 It's worth noting that this solution uses an HTTP proxy but could also use a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) based proxy if non-HTTP protocols were required and the clients on the Vertex side supported SOCKS proxies.
 
