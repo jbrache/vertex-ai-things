@@ -41,8 +41,6 @@ PSC-I based network access addresses all of the previously mentioned challenges 
 
 However, unlike PSA, PSC-I network access currently does not support resolving DNS records from private or internal DNS servers on the customer VPC.  This can lead to challenges reaching HTTP based services which may have a dynamic IP address or rely on HTTP host headers to route traffic correctly.
 
-![alt text](image.png)
-
 ## Workaround
 
 The problem presented by PSC-I's current limitation is not novel.  At an abstract level, the issue is communicating between two discontiguous networks where the client can only take a narrow path into the service network.  Resources inside the service network are able to reach anything with network line of sight, including DNS.
