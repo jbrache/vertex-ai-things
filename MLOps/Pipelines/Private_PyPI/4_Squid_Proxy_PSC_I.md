@@ -51,7 +51,42 @@ In particular, this scenario can be handled by a forward proxy.  Two commonly us
 
 For our solution, we'll use tinyproxy.
 
-### Deployment
+### Starting point
+
+To begin with, here is a simplified VPC topology showing the vertex training jobs and other infrastructure
+
+![](./resources/vertex_pipelines_psci_nodns.png)
+
+On the left, we have an on-prem DNS server responsible for resolving local resources such as a custom API and a python repository.
+
+In the middle, a rather empty transit VPC.  However, Cloud DNS is configured to forward DNS requests to the on-prem DNS server.  While a VM in the green VPC would be able to resolve the artifact registry, Vertex cannot.  The DNS requests are not sent through the green VPC, thus the on-prem services are not easily reached.
+
+While we could hard code on-prem IPs into our pipelines to pull things like dependences, this may not work due to load balancing in front of the repository or IP changes which are typically transparent to clients.  Instead, we will deploy our own proxy layer with a well known IP.  While we will still be referencing an IP from our pipeline configuration, we can use a static reservation and protect it from unexpected changes.  Since the single purpose is proxying requests from Vertex, it is unlikely to be changed without our knowledge.
+
+### Solution Topology
+
+Here is what we will be deploying and how the traffic flow will work.
+
+![](./resources/vertex_pipelines_psci_proxy.png)
+
+1. A [Managed Instance Group](https://cloud.google.com/compute/docs/instance-groups) of Compute Engine VMs.  MIGs perform automatic deployment, updates and repair, minimizing our operational overhead and providing tight integration to GCP Load Balancing.  We will run 3 instances to ensure high availability.
+2. A Load Balancer, configured to send traffic to our proxy VMs.
+3. Our vertex pipelines will be configured to run with an environment variable `https_proxy=[load balancer ip]:3128`.  This instructs HTTP clients running in our pipeline to use the load balancer as a  proxy for all HTTPS requests.
+
+
+When a new HTTP request is sent, it will take the path depicted in the diagram.
+
+1. The client connects to the ILB, which proxies the connection to one of the backend proxy instances.
+2. The request is sent to the proxy and contains a request to connect to one of the on-prem services by name (ex: mypythonstuff.example.com).
+3. The _proxy_ VM - not the HTTP client in Vertex - makes a DNS request to resolve `mypythonstuff.example.com`.
+4. Cloud DNS forwards the query to on-prem and recieves and answer, passing the information back to the proxy VM.
+5. The _proxy_ VM completes the HTTP connection to the resolved IP and either passes the original request along or (in the case of HTTPS) links the incoming client coonnection to the upstream service over an HTTP CONNECT tunnel.
+
+The response from the upstream service is then returned to the client.
+
+It's worth noting that this solution uses an HTTP proxy but could also use a [SOCKS](https://en.wikipedia.org/wiki/SOCKS) based proxy if non-HTTP protocols were required and the clients on the Vertex side supported SOCKS proxies.
+
+### Deployment Steps
 
 
 #### Variables
