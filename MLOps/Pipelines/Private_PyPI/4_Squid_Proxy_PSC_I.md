@@ -76,6 +76,7 @@ NETWORK_TAG="proxy"
 
 ```
 
+#### Setup
 ```sh
 #!/bin/bash
 set -e
@@ -221,7 +222,7 @@ gcloud compute addresses describe "${STATIC_IP_NAME}" --region="${REGION}" --for
 
 ```
 
-### Cleanup
+#### Cleanup
 
 ```sh
 #!/bin/bash
