@@ -5,16 +5,17 @@ set -e
 REGION="us-central1"
 SUBNET_NAME="us-central1-vertex-psci"
 NETWORK="vertex-vpc-prod"
-INSTANCE_TEMPLATE_NAME="squid-proxy-template"
-MIG_NAME="squid-proxy-rmig"
-HEALTH_CHECK_NAME="squid-hc"
-BACKEND_SERVICE_NAME="squid-backend-service"
-FORWARDING_RULE_NAME="squid-forwarding-rule"
-STATIC_IP_NAME="squid-lb-ip"
-NETWORK_TAG="squid-proxy"
+INSTANCE_TEMPLATE_NAME="proxy-template"
+MIG_NAME="proxy-rmig"
+HEALTH_CHECK_NAME="proxy-hc"
+BACKEND_SERVICE_NAME="proxy-backend-service"
+FORWARDING_RULE_NAME="proxy-forwarding-rule"
+FORWARDING_RULE_IP="192.168.10.27"
+STATIC_IP_NAME="proxy-lb-ip"
+NETWORK_TAG="proxy"
 PROJECT_ID=$(gcloud config get-value project) # Assumes project is set
 
-# --- 1. Create Instance Template with Squid Startup Script ---
+# --- 1. Create Instance Template with Tinyproxy Startup Script ---
 echo "Creating Instance Template: ${INSTANCE_TEMPLATE_NAME}..."
 gcloud compute instance-templates create "${INSTANCE_TEMPLATE_NAME}" \
     --region="${REGION}" \
@@ -28,24 +29,52 @@ gcloud compute instance-templates create "${INSTANCE_TEMPLATE_NAME}" \
     # Wait for network config
     sleep 10
 
-    # Install Squid
+    # Install Tinyproxy
     apt-get update -y
-    apt-get install -y squid
+    apt-get install -y tinyproxy
 
-    # Backup original config
-    cp /etc/squid/squid.conf /etc/squid/squid.conf.original
+    # Configure Tinyproxy
+    cat << EOF > /etc/tinyproxy/tinyproxy.conf
+# Default user/group for tinyproxy package on Debian
+User tinyproxy
+Group tinyproxy
 
-    # Define RFC1918 ACLs
-    echo "acl localnet src 10.0.0.0/8" >> /etc/squid/squid.conf
-    echo "acl localnet src 172.16.0.0/12" >> /etc/squid/squid.conf
-    echo "acl localnet src 192.168.0.0/16" >> /etc/squid/squid.conf
+# Port to listen on
+Port 3128
 
-    # Allow localnet access (insert before deny all)
-    sed -i "/^http_access deny all/i http_access allow localnet" /etc/squid/squid.conf
+# Address to listen on (0.0.0.0 for all interfaces)
+Listen 0.0.0.0
 
-    # Restart Squid
-    systemctl restart squid
-    systemctl enable squid'
+# Timeout for connections
+Timeout 600
+
+# Log file location
+LogFile "/var/log/tinyproxy/tinyproxy.log"
+
+# Process ID file location
+PidFile "/run/tinyproxy/tinyproxy.pid"
+
+# Max number of clients
+MaxClients 100
+
+# Allow RFC1918 networks
+Allow 10.0.0.0/8
+Allow 172.16.0.0/12
+Allow 192.168.0.0/16
+
+# Deny ALL
+
+# Required for HTTP 1.1
+ViaProxyName "tinyproxy"
+EOF
+
+    # Ensure log directory exists and has correct permissions
+    mkdir -p /var/log/tinyproxy
+    chown tinyproxy:tinyproxy /var/log/tinyproxy
+
+    # Restart Tinyproxy
+    systemctl restart tinyproxy
+    systemctl enable tinyproxy'
 
 # --- 2. Create Health Check ---
 echo "Creating Health Check: ${HEALTH_CHECK_NAME}..."
@@ -58,8 +87,8 @@ gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME}" \
     --healthy-threshold=2
 
 # --- 3. Create Firewall Rules ---
-echo "Creating Firewall Rule for Squid Proxy traffic..."
-gcloud compute firewall-rules create fw-allow-squid-proxy \
+echo "Creating Firewall Rule for Proxy traffic..."
+gcloud compute firewall-rules create fw-allow-proxy \
     --network="${NETWORK}" \
     --direction=INGRESS \
     --priority=1000 \
@@ -105,6 +134,7 @@ echo "Reserving Static Internal IP: ${STATIC_IP_NAME}..."
 gcloud compute addresses create "${STATIC_IP_NAME}" \
     --region="${REGION}" \
     --subnet="${SUBNET_NAME}" \
+    --addresses="${FORWARDING_RULE_IP}" \
     --purpose=GCE_ENDPOINT
 
 echo "Creating Forwarding Rule: ${FORWARDING_RULE_NAME}..."

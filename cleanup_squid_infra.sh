@@ -3,17 +3,17 @@
 # Define variables (should match the setup script)
 REGION="us-central1"
 SUBNET_NAME="us-central1-vertex-psci"
-INSTANCE_TEMPLATE_NAME="squid-proxy-template"
-MIG_NAME="squid-proxy-rmig"
-HEALTH_CHECK_NAME="squid-hc"
-BACKEND_SERVICE_NAME="squid-backend-service"
-FORWARDING_RULE_NAME="squid-forwarding-rule"
-STATIC_IP_NAME="squid-lb-ip" # Added static IP name
+INSTANCE_TEMPLATE_NAME="proxy-template"
+MIG_NAME="proxy-rmig"
+HEALTH_CHECK_NAME="proxy-hc"
+BACKEND_SERVICE_NAME="proxy-backend-service"
+FORWARDING_RULE_NAME="proxy-forwarding-rule"
+STATIC_IP_NAME="proxy-lb-ip" # Added static IP name
 # Firewall rule names defined during setup
-FW_RULE_PROXY="fw-allow-squid-proxy"
+FW_RULE_PROXY="fw-allow-proxy"
 FW_RULE_HC="fw-allow-health-check"
 
-echo "Starting cleanup of Squid proxy infrastructure in region ${REGION}..."
+echo "Starting cleanup of proxy infrastructure in region ${REGION}..."
 
 # --- 1. Delete Forwarding Rule ---
 echo "Deleting Forwarding Rule: ${FORWARDING_RULE_NAME}..."
