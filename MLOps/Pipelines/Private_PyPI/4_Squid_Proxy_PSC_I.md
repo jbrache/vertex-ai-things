@@ -1,4 +1,4 @@
-# Reaching private DNS based HTTP services from Vertex
+# Consuming private HTTP services from Vertex
 
 While many Vertex Pipelines can be self contained, there are use cases when the pipeline code needs to reach a private endpoint hosted in a customer VPC or in their on-prem environment.  Common examples include:
 
