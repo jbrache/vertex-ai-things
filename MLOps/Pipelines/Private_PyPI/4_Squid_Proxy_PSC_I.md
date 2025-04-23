@@ -75,8 +75,10 @@ NETWORK_TAG="proxy"
 ```
 
 #### Setup
+
+
+1. Create instance template
 ```sh
-# --- 1. Create Instance Template with Tinyproxy Startup Script ---
 gcloud compute instance-templates create "${INSTANCE_TEMPLATE_NAME}" \
     --region="${REGION}" \
     --network-interface=subnet="${SUBNET_NAME}",no-address \
@@ -135,8 +137,11 @@ EOF
     # Restart Tinyproxy
     systemctl restart tinyproxy
     systemctl enable tinyproxy'
+```
 
-# --- 2. Create Health Check ---
+2. Create health check
+
+```sh
 gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME}" \
     --region="${REGION}" \
     --port=3128 \
@@ -144,8 +149,13 @@ gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME}" \
     --timeout=5s \
     --unhealthy-threshold=3 \
     --healthy-threshold=2
+```
 
-# --- 3. Create Firewall Rules ---
+3. Create firewall rules for healthcheck and incoming traffic
+
+    **Note, the source range off fw-allow-proxy can be restricted to your local VPC subnets
+
+```sh
 gcloud compute firewall-rules create fw-allow-proxy \
     --network="${NETWORK}" \
     --direction=INGRESS \
@@ -163,14 +173,17 @@ gcloud compute firewall-rules create fw-allow-health-check \
     --rules=tcp \
     --source-ranges="130.211.0.0/22,35.191.0.0/16" \
     --target-tags="${NETWORK_TAG}"
+```
 
-# --- 4. Create Regional Managed Instance Group ---
+4. Create regional [MIG](https://cloud.google.com/compute/docs/instance-groups#managed_instance_groups) and load balancer backend configuration
+
+```sh
+
 gcloud compute instance-groups managed create "${MIG_NAME}" \
     --region="${REGION}" \
     --size=3 \
     --template="${INSTANCE_TEMPLATE_NAME}"
 
-# --- 5. Create Backend Service ---
 gcloud compute backend-services create "${BACKEND_SERVICE_NAME}" \
     --load-balancing-scheme=INTERNAL \
     --protocol=TCP \
@@ -182,8 +195,11 @@ gcloud compute backend-services add-backend "${BACKEND_SERVICE_NAME}" \
     --region="${REGION}" \
     --instance-group="${MIG_NAME}" \
     --instance-group-region="${REGION}"
+```
 
-# --- 6. Reserve Static IP and Create Forwarding Rule ---
+5. Create load balancer forwarding rule and a static IP
+
+```sh
 gcloud compute addresses create "${STATIC_IP_NAME}" \
     --region="${REGION}" \
     --subnet="${SUBNET_NAME}" \
@@ -200,10 +216,6 @@ gcloud compute forwarding-rules create "${FORWARDING_RULE_NAME}" \
     --ports=3128 \
     --backend-service="${BACKEND_SERVICE_NAME}" \
     --backend-service-region="${REGION}"
-
-gcloud compute addresses describe "${STATIC_IP_NAME}" --region="${REGION}" --format='value(address)'
-
-
 ```
 
 #### Cleanup
