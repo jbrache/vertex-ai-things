@@ -76,11 +76,7 @@ NETWORK_TAG="proxy"
 
 #### Setup
 ```sh
-#!/bin/bash
-set -e
-
 # --- 1. Create Instance Template with Tinyproxy Startup Script ---
-echo "Creating Instance Template: ${INSTANCE_TEMPLATE_NAME}..."
 gcloud compute instance-templates create "${INSTANCE_TEMPLATE_NAME}" \
     --region="${REGION}" \
     --network-interface=subnet="${SUBNET_NAME}",no-address \
@@ -141,7 +137,6 @@ EOF
     systemctl enable tinyproxy'
 
 # --- 2. Create Health Check ---
-echo "Creating Health Check: ${HEALTH_CHECK_NAME}..."
 gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME}" \
     --region="${REGION}" \
     --port=3128 \
@@ -151,7 +146,6 @@ gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME}" \
     --healthy-threshold=2
 
 # --- 3. Create Firewall Rules ---
-echo "Creating Firewall Rule for Proxy traffic..."
 gcloud compute firewall-rules create fw-allow-proxy \
     --network="${NETWORK}" \
     --direction=INGRESS \
@@ -161,7 +155,6 @@ gcloud compute firewall-rules create fw-allow-proxy \
     --source-ranges="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" \
     --target-tags="${NETWORK_TAG}"
 
-echo "Creating Firewall Rule for Health Checks..."
 gcloud compute firewall-rules create fw-allow-health-check \
     --network="${NETWORK}" \
     --direction=INGRESS \
@@ -172,14 +165,12 @@ gcloud compute firewall-rules create fw-allow-health-check \
     --target-tags="${NETWORK_TAG}"
 
 # --- 4. Create Regional Managed Instance Group ---
-echo "Creating Regional MIG: ${MIG_NAME}..."
 gcloud compute instance-groups managed create "${MIG_NAME}" \
     --region="${REGION}" \
     --size=3 \
     --template="${INSTANCE_TEMPLATE_NAME}"
 
 # --- 5. Create Backend Service ---
-echo "Creating Backend Service: ${BACKEND_SERVICE_NAME}..."
 gcloud compute backend-services create "${BACKEND_SERVICE_NAME}" \
     --load-balancing-scheme=INTERNAL \
     --protocol=TCP \
@@ -187,21 +178,18 @@ gcloud compute backend-services create "${BACKEND_SERVICE_NAME}" \
     --health-checks="${HEALTH_CHECK_NAME}" \
     --health-checks-region="${REGION}"
 
-echo "Adding MIG to Backend Service..."
 gcloud compute backend-services add-backend "${BACKEND_SERVICE_NAME}" \
     --region="${REGION}" \
     --instance-group="${MIG_NAME}" \
     --instance-group-region="${REGION}"
 
 # --- 6. Reserve Static IP and Create Forwarding Rule ---
-echo "Reserving Static Internal IP: ${STATIC_IP_NAME}..."
 gcloud compute addresses create "${STATIC_IP_NAME}" \
     --region="${REGION}" \
     --subnet="${SUBNET_NAME}" \
     --addresses="${FORWARDING_RULE_IP}" \
     --purpose=GCE_ENDPOINT
 
-echo "Creating Forwarding Rule: ${FORWARDING_RULE_NAME}..."
 gcloud compute forwarding-rules create "${FORWARDING_RULE_NAME}" \
     --region="${REGION}" \
     --load-balancing-scheme=INTERNAL \
@@ -213,8 +201,6 @@ gcloud compute forwarding-rules create "${FORWARDING_RULE_NAME}" \
     --backend-service="${BACKEND_SERVICE_NAME}" \
     --backend-service-region="${REGION}"
 
-echo "Setup complete. The Internal NLB IP is:"
-# Get IP from the reserved address resource
 gcloud compute addresses describe "${STATIC_IP_NAME}" --region="${REGION}" --format='value(address)'
 
 
@@ -223,55 +209,39 @@ gcloud compute addresses describe "${STATIC_IP_NAME}" --region="${REGION}" --for
 #### Cleanup
 
 ```sh
-#!/bin/bash
-
-echo "Starting cleanup of proxy infrastructure in region ${REGION}..."
-
 # --- 1. Delete Forwarding Rule ---
-echo "Deleting Forwarding Rule: ${FORWARDING_RULE_NAME}..."
 gcloud compute forwarding-rules delete "${FORWARDING_RULE_NAME}" \
     --region="${REGION}" \
     --quiet || echo "Forwarding Rule ${FORWARDING_RULE_NAME} not found or already deleted."
 
 # --- 1.5. Delete Static IP Address ---
-# Must be deleted after the Forwarding Rule
-echo "Deleting Static IP Address: ${STATIC_IP_NAME}..."
 gcloud compute addresses delete "${STATIC_IP_NAME}" \
     --region="${REGION}" \
     --quiet || echo "Static IP Address ${STATIC_IP_NAME} not found or already deleted."
 
 # --- 2. Delete Backend Service ---
-# Note: Backends (MIG) are implicitly removed when the backend service is deleted.
-echo "Deleting Backend Service: ${BACKEND_SERVICE_NAME}..."
 gcloud compute backend-services delete "${BACKEND_SERVICE_NAME}" \
     --region="${REGION}" \
     --quiet || echo "Backend Service ${BACKEND_SERVICE_NAME} not found or already deleted."
 
 # --- 3. Delete Regional Managed Instance Group ---
-echo "Deleting Regional MIG: ${MIG_NAME}..."
 gcloud compute instance-groups managed delete "${MIG_NAME}" \
     --region="${REGION}" \
     --quiet || echo "MIG ${MIG_NAME} not found or already deleted."
 
 # --- 4. Delete Firewall Rules ---
-echo "Deleting Firewall Rule: ${FW_RULE_HC}..."
 gcloud compute firewall-rules delete "${FW_RULE_HC}" \
     --quiet || echo "Firewall Rule ${FW_RULE_HC} not found or already deleted."
 
-echo "Deleting Firewall Rule: ${FW_RULE_PROXY}..."
 gcloud compute firewall-rules delete "${FW_RULE_PROXY}" \
     --quiet || echo "Firewall Rule ${FW_RULE_PROXY} not found or already deleted."
 
 # --- 5. Delete Health Check ---
-echo "Deleting Health Check: ${HEALTH_CHECK_NAME}..."
 gcloud compute health-checks delete "${HEALTH_CHECK_NAME}" \
     --region="${REGION}" \
     --quiet || echo "Health Check ${HEALTH_CHECK_NAME} not found or already deleted."
 
 # --- 6. Delete Instance Template ---
-echo "Deleting Instance Template: ${INSTANCE_TEMPLATE_NAME}..."
 gcloud compute instance-templates delete "${INSTANCE_TEMPLATE_NAME}" \
     --quiet || echo "Instance Template ${INSTANCE_TEMPLATE_NAME} not found or already deleted."
-
-echo "Cleanup script finished."
 ```
