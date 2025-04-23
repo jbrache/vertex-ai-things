@@ -43,6 +43,16 @@ However, unlike PSA, PSC-I network access currently does not support resolving D
 
 ## Workaround
 
+The problem presented by PSC-I's current limitation is not novel.  At an abstract level, the issue is communicating between two discontiguous networks where the client can only take a narrow path into the service network.  Resources inside the service network are able to reach anything with network line of sight, including DNS.
+
+If Vertex had a way to ask a server to perform a DNS lookup and connection on _behalf_ of the client, we'd have way forward.  Fortunately, this is exactly what [proxy servers](https://en.wikipedia.org/wiki/Proxy_server) do!
+
+In particular, this scenario can be handled by a forward proxy.  Two commonly used forward proxies are [tinyproxy](https://tinyproxy.github.io/) and [squid](https://www.squid-cache.org/).
+
+### HTTP Forward Proxy
+
+
+
 
 
 ## Deployment
