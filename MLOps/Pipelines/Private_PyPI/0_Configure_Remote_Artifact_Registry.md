@@ -272,7 +272,8 @@ for i in "${allow_arr[@]}"; do
     if ! gcloud artifacts rules delete $RULE_NAME_PREFIX-$i \
         --project=$PROJECT_ID \
         --location=$LOCATION \
-        --repository=$REPOSITORY
+        --repository=$REPOSITORY \
+        --quiet
     then
         continue
     fi
