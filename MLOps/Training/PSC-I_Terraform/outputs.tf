@@ -146,6 +146,36 @@ output "shared_vpc_service_projects" {
   value       = var.vertex_ai_service_project_ids
 }
 
+# Artifact Registry and Container Build Outputs
+output "artifact_registry_repositories" {
+  description = "Map of Vertex AI service project IDs to their Artifact Registry repository details"
+  value = var.create_vertex_test_container ? {
+    for project_id in var.vertex_ai_service_project_ids :
+    project_id => {
+      repository_id = google_artifact_registry_repository.vertex_training_repositories[project_id].repository_id
+      location      = google_artifact_registry_repository.vertex_training_repositories[project_id].location
+      format        = google_artifact_registry_repository.vertex_training_repositories[project_id].format
+      name          = google_artifact_registry_repository.vertex_training_repositories[project_id].name
+      registry_uri  = "${google_artifact_registry_repository.vertex_training_repositories[project_id].location}-docker.pkg.dev/${project_id}/${google_artifact_registry_repository.vertex_training_repositories[project_id].repository_id}"
+    }
+  } : null
+}
+
+output "container_images" {
+  description = "Map of Vertex AI service project IDs to their built container image URIs"
+  value = var.create_vertex_test_container ? {
+    for project_id in var.vertex_ai_service_project_ids :
+    project_id => {
+      latest      = "${google_artifact_registry_repository.vertex_training_repositories[project_id].location}-docker.pkg.dev/${project_id}/${google_artifact_registry_repository.vertex_training_repositories[project_id].repository_id}/test:latest"
+    }
+  } : null
+}
+
+output "cloud_build_enabled" {
+  description = "Indicates whether Cloud Build API has been enabled in service projects"
+  value       = var.create_vertex_test_container
+}
+
 # Usage Instructions
 output "vertex_ai_usage_instructions" {
   description = "Instructions for using the network attachments with Vertex AI"

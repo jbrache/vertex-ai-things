@@ -94,3 +94,34 @@ variable "enable_shared_vpc" {
   type        = bool
   default     = false
 }
+
+# Artifact Registry Configuration
+variable "create_vertex_test_container" {
+  description = "Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers"
+  type        = bool
+  default     = true
+}
+
+variable "artifact_registry_repository_id" {
+  description = "The ID of the Artifact Registry repository to create"
+  type        = string
+  default     = "vertex-training-test"
+}
+
+variable "artifact_registry_location" {
+  description = "The location for the Artifact Registry repository (e.g., 'us' for multi-region)"
+  type        = string
+  default     = "us"
+}
+
+variable "artifact_registry_description" {
+  description = "Description for the Artifact Registry repository"
+  type        = string
+  default     = "Vertex AI training test repository"
+}
+
+variable "artifact_registry_format" {
+  description = "The format of the Artifact Registry repository"
+  type        = string
+  default     = "DOCKER"
+}

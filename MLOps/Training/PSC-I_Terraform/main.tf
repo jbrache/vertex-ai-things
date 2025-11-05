@@ -26,6 +26,10 @@ terraform {
       source  = "hashicorp/time"
       version = "~> 0.9"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -87,6 +91,24 @@ resource "google_project_service" "service_aiplatform_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "service_artifactregistry_api" {
+  for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
+
+  project = each.value
+  service = "artifactregistry.googleapis.com"
+
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "service_cloudbuild_api" {
+  for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
+
+  project = each.value
+  service = "cloudbuild.googleapis.com"
+
+  disable_on_destroy = false
+}
+
 # Wait 5 minutes after enabling Vertex AI API in networking project
 # This allows time for the service agents to be properly provisioned
 resource "time_sleep" "wait_for_networking_aiplatform_api" {
@@ -101,6 +123,61 @@ resource "time_sleep" "wait_for_service_aiplatform_api" {
   depends_on = [google_project_service.service_aiplatform_api]
 
   create_duration = "300s"  # 5 minutes
+}
+
+# Create Artifact Registry repositories in each Vertex AI service project
+resource "google_artifact_registry_repository" "vertex_training_repositories" {
+  for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
+
+  project       = each.value
+  location      = var.artifact_registry_location
+  repository_id = var.artifact_registry_repository_id
+  description   = var.artifact_registry_description
+  format        = var.artifact_registry_format
+
+  depends_on = [
+    google_project_service.service_artifactregistry_api
+  ]
+}
+
+# Grant Cloud Build Builder role to Compute Engine default service account
+resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
+  for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
+
+  project = each.value
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_projects[each.value].number}-compute@developer.gserviceaccount.com"
+
+  depends_on = [
+    google_project_service.service_cloudbuild_api
+  ]
+}
+
+# Automatically build and push the container when Terraform is applied
+resource "null_resource" "build_vertex_training_container" {
+  for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
+
+  # Trigger rebuild when configuration changes
+  triggers = {
+    artifact_registry_location = var.artifact_registry_location
+    artifact_registry_repo     = var.artifact_registry_repository_id
+    # Uncomment to force rebuild on every apply:
+    # timestamp = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      gcloud builds submit ${path.module}/test_container \
+        --project=${each.value} \
+        --config=${path.module}/test_container/cloudbuild.yaml \
+        --substitutions=_ARTIFACT_REGISTRY_LOCATION=${var.artifact_registry_location},_ARTIFACT_REGISTRY_REPO=${var.artifact_registry_repository_id},_IMAGE_NAME=test,_IMAGE_TAG=latest
+    EOT
+  }
+
+  depends_on = [
+    google_project_service.service_cloudbuild_api,
+    google_artifact_registry_repository.vertex_training_repositories
+  ]
 }
 
 # Step 1: Create a VPC network in the networking project (Shared VPC host)
