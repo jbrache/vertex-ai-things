@@ -17,7 +17,11 @@ This Terraform module creates:
 7. **Firewall Rules** - SSH, HTTPS, ICMP, and optionally all internal traffic
 8. **DNS Peer Role** - Required for Vertex AI Training and Agent Engine services
 
-## Architecture
+## Architecture - Standalone VPC Mode
+![standalone_vpc_mode](resources/images/psc-i-standalone-vpc-mode.png)
+
+## Architecture - Shared VPC Mode
+![shared_vpc_mode](resources/images/psc-i-shared-vpc-mode.png)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
