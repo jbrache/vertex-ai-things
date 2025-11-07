@@ -1,6 +1,6 @@
 # Vertex AI Private Service Connect Interface - Terraform Configuration
 
-This Terraform configuration automates the setup of a Private Service Connect (PSC) Interface for Vertex AI resources. It supports configuring the **network attachment** in the **Host VPC Project** or the **Vertex AI Service Project** with a Shared VPC architecture. The configuration implements all the required steps from the Google Cloud documentation for configuring a consumer VPC network with PSC interface support for Vertex AI.
+This Terraform configuration automates the setup of a Private Service Connect (PSC) Interface for Vertex AI resources. It supports configuring the **network attachment** in the **VPC Host Project** or the **Vertex AI Service Project** with a Shared VPC architecture. The configuration implements all the required steps from the Google Cloud documentation for configuring a consumer VPC network with PSC interface support for Vertex AI.
 
 ## Overview
 
@@ -10,7 +10,7 @@ This Terraform module creates:
 2. **VPC Network** - A custom VPC network for Private Service Connect (in the host project)
 3. **Subnet** - A subnet within the VPC network (in the host project)
 4. **Network Attachment(s)** - Configured to automatically accept connections for PSC
-   - **VPC Host Network Attachment Mode** (`enable_shared_vpc = false`): Created in the Host VPC networking project
+   - **VPC Host Network Attachment Mode** (`enable_shared_vpc = false`): Created in the VPC Host networking project
    - **Service Project Network Attachment Mode** (`enable_shared_vpc = true`): Created in each Vertex AI service project
 5. **Service Project Attachments** - Links Vertex AI service projects to the Shared VPC (when `enable_shared_vpc = true`)
 6. **IAM Bindings** - Grants necessary roles to Vertex AI service agents from all service projects
