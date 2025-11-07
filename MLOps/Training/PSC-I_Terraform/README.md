@@ -1,59 +1,64 @@
 # Vertex AI Private Service Connect Interface - Terraform Configuration
 
-This Terraform configuration automates the setup of a Private Service Connect (PSC) Interface for Vertex AI resources. It supports both **standalone VPC** and **Shared VPC architecture** configurations. The configuration implements all the required steps from the Google Cloud documentation for configuring a consumer VPC network with PSC interface support for Vertex AI.
+This Terraform configuration automates the setup of a Private Service Connect (PSC) Interface for Vertex AI resources. It supports configuring the **network attachment** in the **Host VPC Project** or the **Vertex AI Service Project** with a Shared VPC architecture. The configuration implements all the required steps from the Google Cloud documentation for configuring a consumer VPC network with PSC interface support for Vertex AI.
 
 ## Overview
 
 This Terraform module creates:
 
-1. **Shared VPC Host Project** - Enables Shared VPC on the networking project (when `enable_shared_vpc = true`)
+1. **VPC Host Project** - Enables Shared VPC on the networking project (when `enable_shared_vpc = true`)
 2. **VPC Network** - A custom VPC network for Private Service Connect (in the host project)
 3. **Subnet** - A subnet within the VPC network (in the host project)
 4. **Network Attachment(s)** - Configured to automatically accept connections for PSC
-   - **Standalone VPC mode** (`enable_shared_vpc = false`): Created in the networking project
-   - **Shared VPC mode** (`enable_shared_vpc = true`): Created in each Vertex AI service project
+   - **VPC Host Network Attachment Mode** (`enable_shared_vpc = false`): Created in the Host VPC networking project
+   - **Service Project Network Attachment Mode** (`enable_shared_vpc = true`): Created in each Vertex AI service project
 5. **Service Project Attachments** - Links Vertex AI service projects to the Shared VPC (when `enable_shared_vpc = true`)
 6. **IAM Bindings** - Grants necessary roles to Vertex AI service agents from all service projects
 7. **Firewall Rules** - SSH, HTTPS, ICMP, and optionally all internal traffic
 8. **DNS Peer Role** - Required for Vertex AI Training and Agent Engine services
 
-## Architecture - Standalone VPC Mode
-![standalone_vpc_mode](resources/images/psc-i-standalone-vpc-mode.png)
+## Architecture - VPC Host Network Attachment Mode
+The network attachment is in the VPC Host Project
+![vpc_host_network_attachment](resources/images/vpc-host-project-network-attachment.png)
 
-## Architecture - Shared VPC Mode
-![shared_vpc_mode](resources/images/psc-i-shared-vpc-mode.png)
+## Architecture - Service Project Network Attachment Mode
+The network attachment is in each Vertex AI Service Project
+![service_project_network_attachment](resources/images/service-project-network-attachment.png)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  Networking Project (Shared VPC Host)                                   │
-│                                                                          │
+┌───────────────────────────────────────────────────────────────────────┐
+│  Networking Project (Shared VPC Host)                                 │
+│                                                                       │
 │  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  VPC Network (Custom Mode) - Shared VPC Enabled               │   │
-│  │                                                                  │   │
-│  │  ┌────────────────────────────────────────────────────────┐   │   │
-│  │  │  Subnet (Configurable CIDR)                            │   │   │
-│  │  │                                                          │   │   │
-│  │  │  ┌──────────────────────────────────────────────────┐ │   │   │
-│  │  │  │  Network Attachment (ACCEPT_AUTOMATIC)          │ │   │   │
-│  │  │  │                                                   │ │   │   │
-│  │  │  │  ┌────────────────────────────────────────────┐ │ │   │   │
-│  │  │  │  │  Used by Service Projects               │ │ │   │   │
-│  │  │  │  └────────────────────────────────────────────┘ │ │   │   │
-│  │  │  └──────────────────────────────────────────────────┘ │   │   │
-│  │  └────────────────────────────────────────────────────────┘   │   │
-│  │                                                                  │   │
-│  │  Firewall Rules:                                                │   │
-│  │  - SSH (TCP:22)                                                 │   │
-│  │  - HTTPS (TCP:443)                                              │   │
-│  │  - ICMP                                                         │   │
-│  │  - All Internal (Optional)                                      │   │
+│  │  VPC Network (Custom Mode) - Shared VPC Enabled                │   │
+│  │                                                                │   │
+│  │  ┌────────────────────────────────────────────────────────┐    │   │
+│  │  │  Subnet (Configurable CIDR)                            │    │   │
+│  │  │                                                        │    │   │
+│  │  │  ┌──────────────────────────────────────────────────┐  │    │   │
+│  │  │  │  Network Attachment (ACCEPT_AUTOMATIC)           │  │    │   │
+│  │  │  │                                                  │  │    │   │
+│  │  │  │                                                  │  │    │   │
+│  │  │  │  ┌────────────────────────────────────────────┐  │  │    │   |
+│  │  │  │  │  Service Project Attachments               │  │  │    |   │
+│  │  │  |  |                                            |  |  │    |   │
+│  │  │  │  │  Used by Service Projects                  │  |  │    |   │
+│  │  │  │  └────────────────────────────────────────────┘  │  │    │   │
+│  │  │  └──────────────────────────────────────────────────┘  │    │   │
+│  │  └────────────────────────────────────────────────────────┘    │   │
+│  │                                                                │   │
+│  │  Firewall Rules:                                               │   │
+│  │  - SSH (TCP:22)                                                │   │
+│  │  - HTTPS (TCP:443)                                             │   │
+│  │  - ICMP                                                        │   │
+│  │  - All Internal (Optional)                                     │   │
 │  └────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  IAM Roles (granted to service project service agents):                │
-│  - compute.networkAdmin (project-level)                                │
-│  - compute.networkUser (subnet-level)                                  │
-│  - dns.peer (project-level)                                            │
-└──────────────────────────────────────────────────────────────────────────┘
+│                                                                       │
+│  IAM Roles (granted to service project service agents):               │
+│  - compute.networkAdmin (project-level)                               │
+│  - compute.networkUser (subnet-level)                                 │
+│  - dns.peer (project-level)                                           │
+└───────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ Shared VPC Connection
                                       │
