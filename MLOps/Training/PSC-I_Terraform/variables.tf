@@ -95,11 +95,18 @@ variable "enable_shared_vpc" {
   default     = false
 }
 
+# Vertex AI Custom Job Configuration
+variable "create_training_job" {
+  description = "If true, creates a Vertex AI custom training job in each service project using the created resources."
+  type        = bool
+  default     = false
+}
+
 # Artifact Registry Configuration
 variable "create_vertex_test_container" {
   description = "Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "artifact_registry_repository_id" {

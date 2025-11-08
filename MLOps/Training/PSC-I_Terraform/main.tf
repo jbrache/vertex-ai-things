@@ -261,8 +261,8 @@ resource "google_compute_network_attachment" "psc_attachments" {
 # Step 3.5: Create network attachments in each region for service projects (Service Project Network Attachment Mode only)
 # When enable_shared_vpc = true, network attachments are created in each Vertex AI service project for each region
 locals {
-  # Create a set of all combinations of service projects and regions for Service Project Network Attachment Mode
-  service_project_regions = var.enable_shared_vpc ? flatten([
+  # Create a set of all combinations of service projects and regions
+  service_project_regions = flatten([
     for project_id in var.vertex_ai_service_project_ids : [
       for region in var.regions : {
         project_id = project_id
@@ -270,14 +270,14 @@ locals {
         key        = "${project_id}-${region}"
       }
     ]
-  ]) : []
+  ])
 }
 
 resource "google_compute_network_attachment" "psc_attachments_service_projects" {
-  for_each = {
+  for_each = var.enable_shared_vpc ? {
     for item in local.service_project_regions :
     item.key => item
-  }
+  } : {}
 
   name        = "${each.value.region}-${var.network_attachment_name_postfix}"
   region      = each.value.region
@@ -450,4 +450,70 @@ resource "google_compute_firewall" "allow_all_internal" {
 
   source_ranges = var.all_traffic_source_ranges
   description   = "Allow all ICMP, TCP, and UDP traffic from specified ranges"
+}
+
+# Step 10: Create a Vertex AI Custom Job in each service project using gcloud (optional)
+resource "null_resource" "submit_training_job" {
+  for_each = var.create_training_job ? {
+    for item in local.service_project_regions :
+    item.key => item
+  } : {}
+
+  triggers = {
+    # This ensures the job is re-created if the image or network attachment changes
+    image_uri          = google_artifact_registry_repository.vertex_training_repositories[each.value.project_id].location == null ? "" : "${google_artifact_registry_repository.vertex_training_repositories[each.value.project_id].location}-docker.pkg.dev/${each.value.project_id}/${google_artifact_registry_repository.vertex_training_repositories[each.value.project_id].repository_id}/test:latest"
+    network_attachment = "${var.enable_shared_vpc ? "projects/${each.value.project_id}/regions/${each.value.region}/networkAttachments/${each.value.region}-${var.network_attachment_name_postfix}" : "projects/${var.networking_project_id}/regions/${each.value.region}/networkAttachments/${each.value.region}-${var.network_attachment_name_postfix}"}"
+    # Force submitting a new job on every apply:
+    timestamp = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      cat <<EOF > request-${each.key}.json
+      {
+        "display_name": "CPU Test Job PSC-I",
+        "job_spec": {
+          "worker_pool_specs": [
+            {
+              "machine_spec": {
+                "machine_type": "n2-standard-4"
+              },
+              "replica_count": 1,
+              "container_spec": {
+                "image_uri": "${self.triggers.image_uri}",
+                "args": [
+                  "--sleep=600s"
+                ]
+              },
+              "disk_spec": {
+                "boot_disk_type": "pd-ssd",
+                "boot_disk_size_gb": 100
+              }
+            }
+          ],
+          "service_account": "${data.google_project.vertex_ai_service_projects[each.value.project_id].number}-compute@developer.gserviceaccount.com",
+          "psc_interface_config": {
+            "network_attachment": "${self.triggers.network_attachment}"
+          },
+          "enable_web_access": true
+        },
+        "labels": {
+          "network_type": "psc-i"
+        }
+      }
+      EOF
+
+      curl -X POST \
+           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+           -H "Content-Type: application/json; charset=utf-8" \
+           -d @request-${each.key}.json \
+           "https://${each.value.region}-aiplatform.googleapis.com/v1/projects/${each.value.project_id}/locations/${each.value.region}/customJobs"
+    EOT
+  }
+
+  depends_on = [
+    null_resource.build_vertex_training_container,
+    google_project_iam_member.networking_vertex_ai_network_admin_host_mode,
+    google_project_iam_member.networking_vertex_ai_network_admin_service_mode
+  ]
 }
