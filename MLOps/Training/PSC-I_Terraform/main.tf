@@ -309,17 +309,31 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
   ]
 }
 
-# Step 4: Grant compute.networkAdmin role to the networking project's Vertex AI service agent
-# In both VPC Host Project Network Attachment and Service Project Network Attachment modes, the networking project's own service agent needs network admin permissions
-resource "google_project_iam_member" "networking_vertex_ai_network_admin" {
+# Step 4: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
+# In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
+resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
+  count   = var.enable_shared_vpc ? 0 : 1
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
 
   depends_on = [
     google_compute_network_attachment.psc_attachments,
-    google_compute_network_attachment.psc_attachments_service_projects,
     time_sleep.wait_for_networking_aiplatform_api
+  ]
+}
+
+# In Service Project Network Attachment Mode, grant the role to each service project's own service agent.
+resource "google_project_iam_member" "networking_vertex_ai_network_admin_service_mode" {
+  for_each = var.enable_shared_vpc ? toset(var.vertex_ai_service_project_ids) : []
+
+  project = each.key
+  role    = "roles/compute.networkAdmin"
+  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_projects[each.key].number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_compute_network_attachment.psc_attachments_service_projects,
+    time_sleep.wait_for_service_aiplatform_api
   ]
 }
 
