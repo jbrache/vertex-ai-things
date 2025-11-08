@@ -44,9 +44,9 @@ output "subnets" {
   }
 }
 
-# Network Attachment Outputs - Standalone VPC Mode (Multi-region)
+# Network Attachment Outputs - VPC Host Project Network Attachment Mode (Multi-region)
 output "network_attachments_standalone" {
-  description = "Map of region names to network attachment details (Standalone VPC mode only)"
+  description = "Map of region names to network attachment details (VPC Host Project Network Attachment Mode only)"
   value = var.enable_shared_vpc ? null : {
     for region in var.regions :
     region => {
@@ -58,9 +58,9 @@ output "network_attachments_standalone" {
   }
 }
 
-# Network Attachment Outputs - Shared VPC Mode (Multi-region)
+# Network Attachment Outputs - Service Project Network Attachment Mode (Multi-region)
 output "network_attachments_service_projects" {
-  description = "Nested map of service project IDs and regions to network attachment self-links (Shared VPC mode only)"
+  description = "Nested map of service project IDs and regions to network attachment self-links (Service Project Network Attachment Mode only)"
   value = var.enable_shared_vpc ? {
     for project_id in var.vertex_ai_service_project_ids :
     project_id => {
@@ -181,18 +181,18 @@ output "vertex_ai_usage_instructions" {
   description = "Instructions for using the network attachments with Vertex AI"
   value = var.enable_shared_vpc ? join("\n", [
     "========================================",
-    "Shared VPC Mode - Private Service Connect Configuration (Multi-Region)",
+    "Service Project Network Attachment Mode - Private Service Connect Configuration (Multi-Region)",
     "========================================",
     "",
     "Network Configuration:",
-    "- Deployment Mode: Shared VPC",
+    "- Deployment Mode: Service Project Network Attachment",
     "- Networking Project (Host): ${var.networking_project_id}",
     "- Service Projects: ${join(", ", var.vertex_ai_service_project_ids)}",
     "- Regions: ${join(", ", var.regions)}",
     "- Network Attachments: Created in each service project for each region",
     "",
     "========================================",
-    "Usage Instructions (Shared VPC Mode)",
+    "Usage Instructions (Service Project Network Attachment Mode)",
     "========================================",
     "",
     "In Shared VPC mode, each service project has network attachments in each configured region.",
@@ -227,11 +227,11 @@ output "vertex_ai_usage_instructions" {
     join("\n", [for project_id in var.vertex_ai_service_project_ids : "- Project: ${project_id}\n  Service Agent: service-${data.google_project.vertex_ai_service_projects[project_id].number}@gcp-sa-aiplatform.iam.gserviceaccount.com"]),
   ]) : join("\n", [
     "========================================",
-    "Standalone VPC Mode - Private Service Connect Configuration (Multi-Region)",
+    "VPC Host Project Network Attachment Mode - Private Service Connect Configuration (Multi-Region)",
     "========================================",
     "",
     "Network Configuration:",
-    "- Deployment Mode: Standalone VPC",
+    "- Deployment Mode: VPC Host Project Network Attachment",
     "- Networking Project: ${var.networking_project_id}",
     "- Service Projects: ${join(", ", var.vertex_ai_service_project_ids)}",
     "- Regions: ${join(", ", var.regions)}",
@@ -240,7 +240,7 @@ output "vertex_ai_usage_instructions" {
     join("\n", [for region in var.regions : "- ${region}: ${google_compute_network_attachment.psc_attachments[region].self_link}"]),
     "",
     "========================================",
-    "Usage Instructions (Standalone VPC Mode)",
+    "Usage Instructions (VPC Host Project Network Attachment Mode)",
     "========================================",
     "",
     "When creating Vertex AI resources from any service project, specify the network attachment",

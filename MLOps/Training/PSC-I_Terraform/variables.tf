@@ -90,7 +90,7 @@ variable "all_traffic_source_ranges" {
 
 # Shared VPC Configuration
 variable "enable_shared_vpc" {
-  description = "Enable Shared VPC configuration. When true, sets up the networking project as a Shared VPC host and attaches service projects."
+  description = "Enable Service Project Network Attachment Mode. When true, sets up the networking project as a Shared VPC host and attaches service projects."
   type        = bool
   default     = false
 }

@@ -240,7 +240,7 @@ resource "google_compute_shared_vpc_service_project" "service_projects" {
   ]
 }
 
-# Step 3: Create network attachments in each region in the networking project (Standalone VPC mode only)
+# Step 3: Create network attachments in each region in the networking project (VPC Host Project Network Attachment Mode only)
 # When enable_shared_vpc = false, network attachments are created in the networking project
 resource "google_compute_network_attachment" "psc_attachments" {
   for_each = var.enable_shared_vpc ? toset([]) : toset(var.regions)
@@ -248,7 +248,7 @@ resource "google_compute_network_attachment" "psc_attachments" {
   name        = "${each.value}-${var.network_attachment_name_postfix}"
   region      = each.value
   project     = var.networking_project_id
-  description = "Network attachment for Private Service Connect Interface to Vertex AI in ${each.value} (Standalone VPC mode)"
+  description = "Network attachment for Private Service Connect Interface to Vertex AI in ${each.value} (VPC Host Project Network Attachment Mode)"
 
   connection_preference = "ACCEPT_AUTOMATIC"
   subnetworks           = [google_compute_subnetwork.subnets[each.value].self_link]
@@ -258,10 +258,10 @@ resource "google_compute_network_attachment" "psc_attachments" {
   ]
 }
 
-# Step 3.5: Create network attachments in each region for service projects (Shared VPC mode only)
+# Step 3.5: Create network attachments in each region for service projects (Service Project Network Attachment Mode only)
 # When enable_shared_vpc = true, network attachments are created in each Vertex AI service project for each region
 locals {
-  # Create a set of all combinations of service projects and regions for Shared VPC mode
+  # Create a set of all combinations of service projects and regions for Service Project Network Attachment Mode
   service_project_regions = var.enable_shared_vpc ? flatten([
     for project_id in var.vertex_ai_service_project_ids : [
       for region in var.regions : {
@@ -282,7 +282,7 @@ resource "google_compute_network_attachment" "psc_attachments_service_projects" 
   name        = "${each.value.region}-${var.network_attachment_name_postfix}"
   region      = each.value.region
   project     = each.value.project_id
-  description = "Network attachment for Private Service Connect Interface to Vertex AI in ${each.value.region} (Shared VPC mode)"
+  description = "Network attachment for Private Service Connect Interface to Vertex AI in ${each.value.region} (Service Project Network Attachment Mode)"
 
   connection_preference = "ACCEPT_AUTOMATIC"
   subnetworks           = [google_compute_subnetwork.subnets[each.value.region].self_link]
@@ -294,7 +294,7 @@ resource "google_compute_network_attachment" "psc_attachments_service_projects" 
 }
 
 # Step 3.6: Grant compute.networkUser role to service project Vertex AI service agents on the host project
-# Required when network attachments are created in service projects (Shared VPC mode)
+# Required when network attachments are created in service projects (Service Project Network Attachment Mode)
 # Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
 resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
   for_each = var.enable_shared_vpc ? toset(var.vertex_ai_service_project_ids) : []
@@ -310,7 +310,7 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
 }
 
 # Step 4: Grant compute.networkAdmin role to the networking project's Vertex AI service agent
-# In both standalone and Shared VPC modes, the networking project's own service agent needs network admin permissions
+# In both VPC Host Project Network Attachment and Service Project Network Attachment modes, the networking project's own service agent needs network admin permissions
 resource "google_project_iam_member" "networking_vertex_ai_network_admin" {
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
@@ -324,7 +324,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin" {
 }
 
 # Step 4.5: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
-# This is required for Shared VPC to allow service projects to use the network
+# This is required for Service Project Network Attachment to allow service projects to use the network
 locals {
   # Create combinations of service projects and regions for subnet IAM
   subnet_iam_members = var.enable_shared_vpc ? flatten([
