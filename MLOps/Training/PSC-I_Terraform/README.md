@@ -12,6 +12,18 @@ This module creates the necessary resources for a PSC-enabled network, including
 -   IAM bindings for Vertex AI service agents.
 -   Firewall rules.
 
+## What you'll build
+In this tutorial, you're going to build a comprehensive Vertex AI Training deployment with Private Service Connect (PSC) Interface to allow connectivity from the producer to the consumer's compute as illustrated in the figures (see **VPC Host Network** or **Service Project Network Attachment** Mode below) below targeting rfc-1928 endpoints.
+
+You'll create a single psc-network-attachment in the consumer VPC leveraging DNS peering to resolve the consumers VMs in the tenant project hosting Vertex AI Training resulting in the following use cases:
+
+1. Deploy Vertex AI Training and configuring a proxy VM to act as an explicit proxy, allowing Vertex AI training to access the proxy VM's DNS endpoint.
+
+## What you'll learn
+1. How to create a network attachment
+2. How a producer can use a network attachment to create a PSC interface
+3. How to establish communication from the producer to the consumer using DNS Peering
+
 ## Architectures
 
 ### VPC Host Network Attachment Mode
@@ -122,7 +134,9 @@ terraform destroy
 
 ## Additional Resources
 
--   [Vertex AI Private Service Connect Documentation](https://cloud.google.com/vertex-ai/docs/general/private-service-connect)
+-   [Set up a Private Service Connect interface for Vertex AI resources](https://cloud.google.com/vertex-ai/docs/general/vpc-psc-i-setup)
+-   [Use Private Service Connect interface for Vertex AI Training](https://docs.cloud.google.com/vertex-ai/docs/training/psc-i-egress)
+-   [Codelab: Vertex AI Pipelines PSC Interface Explicit Proxy](https://codelabs.developers.google.com/pipelines-psc-interface-proxy)
 -   [Shared VPC Documentation](https://cloud.google.com/vpc/docs/shared-vpc)
 -   [Network Attachments Documentation](https://cloud.google.com/vpc/docs/about-network-attachments)
 
