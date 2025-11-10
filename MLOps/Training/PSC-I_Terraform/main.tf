@@ -338,7 +338,30 @@ resource "google_compute_network_attachment" "psc_attachments_service_projects" 
 }
 
 # ============================================
-# Step 3.6: Grant compute.networkUser role to service project Vertex AI service agents on the host project
+# Step 4: Generate service identity for services (IAM)
+# ============================================
+# This activates the service agent for a given API
+resource "google_project_service_identity" "networking_aiplatform_sa" {
+  provider = google-beta
+
+  project = var.networking_project_id
+  service = "aiplatform.googleapis.com"
+
+  depends_on = [google_project_service.networking_aiplatform_api]
+}
+
+resource "google_project_service_identity" "service_aiplatform_sa" {
+  for_each = toset(var.vertex_ai_service_project_ids)
+  provider = google-beta
+
+  project = each.key
+  service = "aiplatform.googleapis.com"
+
+  depends_on = [google_project_service.service_aiplatform_api]
+}
+
+# ============================================
+# Step 4.1: Grant compute.networkUser role to service project Vertex AI service agents on the host project
 # ============================================
 # Required when network attachments are created in service projects (Service Project Network Attachment Mode)
 # Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
@@ -356,11 +379,11 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
 }
 
 # ============================================
-# Step 4: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
+# Step 4.2: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
 # ============================================
 # In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
 resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
-  # count   = var.enable_shared_vpc ? 0 : 1
+  count   = var.enable_shared_vpc ? 0 : 1
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
@@ -386,7 +409,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_service
 }
 
 # ============================================
-# Step 4.5: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
+# Step 4.3: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
 # ============================================
 # This is required for Service Project Network Attachment to allow service projects to use the network
 locals {
