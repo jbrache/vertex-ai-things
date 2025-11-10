@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+# ============================================
 # Project and Region Configuration
+# ============================================
 variable "networking_project_id" {
   description = "The Google Cloud project ID where networking resources (VPC, subnet, network attachment) will be created"
   type        = string
@@ -37,7 +39,9 @@ variable "subnet_cidr_ranges" {
   default     = {}
 }
 
+# ============================================
 # Network Configuration
+# ============================================
 variable "network_name" {
   description = "Name of the VPC network to create"
   type        = string
@@ -50,14 +54,18 @@ variable "subnet_name_postfix" {
   default     = "vertex-psci"
 }
 
+# ============================================
 # Network Attachment Configuration
+# ============================================
 variable "network_attachment_name_postfix" {
   description = "Postfix for network attachment names. Region name will be used as prefix (e.g., 'us-central1-vertex-psci')"
   type        = string
   default     = "vertex-psci"
 }
 
+# ============================================
 # Firewall Configuration
+# ============================================
 variable "ssh_source_ranges" {
   description = "Source IP ranges allowed for SSH access (TCP port 22)"
   type        = list(string)
@@ -88,21 +96,27 @@ variable "all_traffic_source_ranges" {
   default     = ["10.0.0.0/8"]
 }
 
+# ============================================
 # Shared VPC Configuration
+# ============================================
 variable "enable_shared_vpc" {
   description = "Enable Service Project Network Attachment Mode. When true, sets up the networking project as a Shared VPC host and attaches service projects."
   type        = bool
   default     = false
 }
 
+# ============================================
 # Vertex AI Custom Job Configuration
+# ============================================
 variable "create_training_job" {
   description = "If true, creates a Vertex AI custom training job in each service project using the created resources."
   type        = bool
   default     = false
 }
 
+# ============================================
 # Artifact Registry Configuration
+# ============================================
 variable "create_vertex_test_container" {
   description = "Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers"
   type        = bool
@@ -131,4 +145,46 @@ variable "artifact_registry_format" {
   description = "The format of the Artifact Registry repository"
   type        = string
   default     = "DOCKER"
+}
+
+# ============================================
+# Proxy VM Configuration
+# ============================================
+variable "create_proxy_vm" {
+  description = "If true, creates a proxy VM in the first region."
+  type        = bool
+  default     = false
+}
+
+variable "proxy_vm_zone" {
+  description = "The zone for the proxy VM. Should be in the first region of the `regions` list."
+  type        = string
+  default     = "us-central1-a"
+}
+
+variable "proxy_vm_machine_type" {
+  description = "The machine type for the proxy VM."
+  type        = string
+  default     = "e2-micro"
+}
+
+# ============================================
+# Cloud DNS Configuration
+# ============================================
+variable "create_dns_zone" {
+  description = "If true, creates a private Cloud DNS zone and an A record for the proxy VM."
+  type        = bool
+  default     = false
+}
+
+variable "dns_zone_name" {
+  description = "The name of the Cloud DNS managed zone."
+  type        = string
+  default     = "private-dns-demo"
+}
+
+variable "dns_domain" {
+  description = "The DNS name of the managed zone (e.g., 'demo.com.')."
+  type        = string
+  default     = "demo.com."
 }

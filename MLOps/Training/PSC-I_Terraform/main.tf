@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+# ============================================
 # Configure Terraform and required providers
+# ============================================
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -33,13 +35,17 @@ terraform {
   }
 }
 
-# Configure the Google Cloud Provider for networking project (Shared VPC host)
+# ============================================
+# Configure the Google Cloud Provider for networking project (VPC host project)
+# ============================================
 provider "google" {
   project = var.networking_project_id
   region  = var.regions[0]  # Use first region as default
 }
 
+# ============================================
 # Data source to get networking project number
+# ============================================
 data "google_project" "networking_project" {
   project_id = var.networking_project_id
 }
@@ -50,7 +56,9 @@ data "google_project" "vertex_ai_service_projects" {
   project_id = each.value
 }
 
+# ============================================
 # Enable required APIs in the networking project
+# ============================================
 resource "google_project_service" "networking_compute_api" {
   project = var.networking_project_id
   service = "compute.googleapis.com"
@@ -109,6 +117,22 @@ resource "google_project_service" "service_cloudbuild_api" {
   disable_on_destroy = false
 }
 
+# ============================================
+# Configure Organization Policy for IP Forwarding of Proxy VM
+# ============================================
+resource "google_project_organization_policy" "ip_forward" {
+  count   = var.create_proxy_vm ? 1 : 0
+  project = var.networking_project_id
+  constraint = "compute.vmCanIpForward"
+  list_policy {
+    allow {
+      values = [
+        "projects/${var.networking_project_id}/zones/${var.proxy_vm_zone}/instances/proxy-vm",
+      ]
+    }
+  }
+}
+
 # Wait 5 minutes after enabling Vertex AI API in networking project
 # This allows time for the service agents to be properly provisioned
 resource "time_sleep" "wait_for_networking_aiplatform_api" {
@@ -125,7 +149,9 @@ resource "time_sleep" "wait_for_service_aiplatform_api" {
   create_duration = "300s"  # 5 minutes
 }
 
+# ============================================
 # Create Artifact Registry repositories in each Vertex AI service project
+# ============================================
 resource "google_artifact_registry_repository" "vertex_training_repositories" {
   for_each = var.create_vertex_test_container ? toset(var.vertex_ai_service_project_ids) : []
 
@@ -180,12 +206,14 @@ resource "null_resource" "build_vertex_training_container" {
   ]
 }
 
-# Step 1: Create a VPC network in the networking project (Shared VPC host)
+# ============================================
+# Step 1: Create a VPC network in the networking project (VPC host Project)
+# ============================================
 resource "google_compute_network" "vpc_network" {
   name                    = var.network_name
   auto_create_subnetworks = false
   project                 = var.networking_project_id
-  description             = "Shared VPC network for Private Service Connect Interface to Vertex AI"
+  description             = "VPC network for Private Service Connect Interface to Vertex AI"
 
   depends_on = [
     google_project_service.networking_compute_api,
@@ -194,7 +222,9 @@ resource "google_compute_network" "vpc_network" {
   ]
 }
 
+# ============================================
 # Step 2: Create subnets in each region in the networking project
+# ============================================
 # Generates a CIDR range automatically if not provided in subnet_cidr_ranges
 locals {
   # Create a map of region to CIDR, using provided values or generating defaults
@@ -215,7 +245,9 @@ resource "google_compute_subnetwork" "subnets" {
   description   = "Subnet for Private Service Connect Interface to Vertex AI in ${each.value}"
 }
 
-# Step 2.5: Enable Shared VPC on the host project (optional)
+# ============================================
+# Step 2.5: Enable Shared VPC on the VPC Host project (optional)
+# ============================================
 resource "google_compute_shared_vpc_host_project" "host" {
   count   = var.enable_shared_vpc ? 1 : 0
   project = var.networking_project_id
@@ -226,7 +258,9 @@ resource "google_compute_shared_vpc_host_project" "host" {
   ]
 }
 
-# Step 2.6: Attach service projects to the Shared VPC (optional)
+# ============================================
+# Step 2.6: Attach service projects to the Shared VPC Host project (optional)
+# ============================================
 resource "google_compute_shared_vpc_service_project" "service_projects" {
   for_each = var.enable_shared_vpc ? toset(var.vertex_ai_service_project_ids) : []
 
@@ -240,7 +274,9 @@ resource "google_compute_shared_vpc_service_project" "service_projects" {
   ]
 }
 
+# ============================================
 # Step 3: Create network attachments in each region in the networking project (VPC Host Project Network Attachment Mode only)
+# ============================================
 # When enable_shared_vpc = false, network attachments are created in the networking project
 resource "google_compute_network_attachment" "psc_attachments" {
   for_each = var.enable_shared_vpc ? toset([]) : toset(var.regions)
@@ -253,12 +289,19 @@ resource "google_compute_network_attachment" "psc_attachments" {
   connection_preference = "ACCEPT_AUTOMATIC"
   subnetworks           = [google_compute_subnetwork.subnets[each.value].self_link]
 
+  # Once Vertex AI Jobs run, some attributes will be managed by Vertex AI
+  lifecycle {
+    ignore_changes = all
+  }
+
   depends_on = [
     google_compute_subnetwork.subnets
   ]
 }
 
+# ============================================
 # Step 3.5: Create network attachments in each region for service projects (Service Project Network Attachment Mode only)
+# ============================================
 # When enable_shared_vpc = true, network attachments are created in each Vertex AI service project for each region
 locals {
   # Create a set of all combinations of service projects and regions
@@ -293,7 +336,9 @@ resource "google_compute_network_attachment" "psc_attachments_service_projects" 
   ]
 }
 
+# ============================================
 # Step 3.6: Grant compute.networkUser role to service project Vertex AI service agents on the host project
+# ============================================
 # Required when network attachments are created in service projects (Service Project Network Attachment Mode)
 # Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
 resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
@@ -309,10 +354,12 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
   ]
 }
 
+# ============================================
 # Step 4: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
+# ============================================
 # In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
 resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
-  count   = var.enable_shared_vpc ? 0 : 1
+  # count   = var.enable_shared_vpc ? 0 : 1
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
@@ -337,7 +384,9 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_service
   ]
 }
 
+# ============================================
 # Step 4.5: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
+# ============================================
 # This is required for Service Project Network Attachment to allow service projects to use the network
 locals {
   # Create combinations of service projects and regions for subnet IAM
@@ -367,7 +416,9 @@ resource "google_compute_subnetwork_iam_member" "vertex_ai_network_user" {
   depends_on = [google_compute_shared_vpc_service_project.service_projects]
 }
 
+# ============================================
 # Step 5: Create firewall rule that allows SSH access on TCP port 22 in the networking project
+# ============================================
 resource "google_compute_firewall" "allow_ssh" {
   name    = "${var.network_name}-firewall-ssh"
   network = google_compute_network.vpc_network.name
@@ -382,7 +433,9 @@ resource "google_compute_firewall" "allow_ssh" {
   description   = "Allow SSH access on TCP port 22"
 }
 
+# ============================================
 # Step 6: Create firewall rule that allows HTTPS traffic on TCP port 443 in the networking project
+# ============================================
 resource "google_compute_firewall" "allow_https" {
   name    = "${var.network_name}-firewall-https"
   network = google_compute_network.vpc_network.name
@@ -397,7 +450,9 @@ resource "google_compute_firewall" "allow_https" {
   description   = "Allow HTTPS traffic on TCP port 443"
 }
 
+# ============================================
 # Step 7: Create firewall rule that allows ICMP traffic (ping requests) in the networking project
+# ============================================
 resource "google_compute_firewall" "allow_icmp" {
   name    = "${var.network_name}-firewall-icmp"
   network = google_compute_network.vpc_network.name
@@ -411,7 +466,9 @@ resource "google_compute_firewall" "allow_icmp" {
   description   = "Allow ICMP traffic (ping requests)"
 }
 
+# ============================================
 # Step 8: Assign DNS Peer role to service projects' Vertex AI service agents in the networking project (host)
+# ============================================
 resource "google_project_iam_member" "service_dns_peer" {
   for_each = toset(var.vertex_ai_service_project_ids)
   
@@ -426,7 +483,9 @@ resource "google_project_iam_member" "service_dns_peer" {
   ]
 }
 
+# ============================================
 # Step 9: Create firewall rule that allows all ICMP, TCP, and UDP traffic (optional)
+# ============================================
 # Uncomment if you need to allow all internal traffic
 resource "google_compute_firewall" "allow_all_internal" {
   count   = var.enable_allow_all_firewall ? 1 : 0
@@ -452,7 +511,13 @@ resource "google_compute_firewall" "allow_all_internal" {
   description   = "Allow all ICMP, TCP, and UDP traffic from specified ranges"
 }
 
-# Step 10: Create a Vertex AI Custom Job in each service project using gcloud (optional)
+# ============================================
+# Step 10: Create a Vertex AI Custom Job in each service project using the REST API
+# ============================================
+# Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
+# Its status can be monitored by navigating to the following in the Google Cloud Console:
+# Vertex AI → Training → Custom jobs
+# https://console.cloud.google.com/vertex-ai/training/custom-jobs
 resource "null_resource" "submit_training_job" {
   for_each = var.create_training_job ? {
     for item in local.service_project_regions :
@@ -494,6 +559,7 @@ resource "null_resource" "submit_training_job" {
           "service_account": "${data.google_project.vertex_ai_service_projects[each.value.project_id].number}-compute@developer.gserviceaccount.com",
           "psc_interface_config": {
             "network_attachment": "${self.triggers.network_attachment}"
+            ${var.create_dns_zone ? ",\"dns_peering_configs\": [{\"domain\": \"${var.dns_domain}\",\"target_project\": \"${var.networking_project_id}\",\"target_network\": \"${google_compute_network.vpc_network.name}\"}]" : ""}
           },
           "enable_web_access": true
         },
@@ -516,4 +582,136 @@ resource "null_resource" "submit_training_job" {
     google_project_iam_member.networking_vertex_ai_network_admin_host_mode,
     google_project_iam_member.networking_vertex_ai_network_admin_service_mode
   ]
+}
+
+# ============================================
+# Step 11: Create a Cloud Router in the first region (optional)
+# ============================================
+resource "google_compute_router" "router" {
+  count   = var.create_proxy_vm ? 1 : 0
+  name    = "cloud-router-for-nat"
+  network = google_compute_network.vpc_network.name
+  project = var.networking_project_id
+  region  = var.regions[0]
+}
+
+# ============================================
+# Step 12: Create a Cloud NAT gateway in the first region (optional)
+# ============================================
+resource "google_compute_router_nat" "nat" {
+  count                              = var.create_proxy_vm ? 1 : 0
+  name                               = "cloud-nat-${var.regions[0]}"
+  router                             = google_compute_router.router[0].name
+  project                            = var.networking_project_id
+  region                             = var.regions[0]
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  log_config {
+    enable = true
+    filter = "ALL"
+  }
+}
+
+# ============================================
+# Step 13: Create a proxy VM in the first region (optional)
+# ============================================
+resource "google_compute_instance" "proxy_vm" {
+  count        = var.create_proxy_vm ? 1 : 0
+  project      = var.networking_project_id
+  zone         = var.proxy_vm_zone
+  name         = "proxy-vm"
+  machine_type = var.proxy_vm_machine_type
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+    }
+  }
+  network_interface {
+    network    = google_compute_network.vpc_network.id
+    subnetwork = google_compute_subnetwork.subnets[var.regions[0]].id
+  }
+  # To enable this need to change the org policy: constraints/compute.vmCanIpForward
+  can_ip_forward = true
+  metadata = {
+    startup-script = <<-EOT
+      #! /bin/bash
+      # Wait for network config
+      sleep 10
+
+      # Install Tinyproxy
+      apt-get update -y
+      apt-get install -y tinyproxy
+
+      # Configure Tinyproxy
+      cat << EOF > /etc/tinyproxy/tinyproxy.conf
+      # Default user/group for tinyproxy package on Debian
+      User tinyproxy
+      Group tinyproxy
+
+      # Port to listen on
+      Port 3128
+
+      # Address to listen on (0.0.0.0 for all interfaces)
+      Listen 0.0.0.0
+      # Timeout for connections
+      Timeout 600
+
+      # Log file location
+      LogFile "/var/log/tinyproxy/tinyproxy.log"
+      # Process ID file location
+      PidFile "/, some attributes will be managed by Vertex AI/tinyproxy/tinyproxy.pid"
+
+      # Max number of clients
+      MaxClients 100
+
+      # Allow RFC1918 networks
+      Allow 10.0.0.0/8
+      Allow 172.16.0.0/12
+      Allow 192.168.0.0/16
+
+      # Deny networks
+
+      # Required for HTTP 1.1
+      ViaProxyName "tinyproxy"
+      EOF
+
+      # Ensure log directory exists and has correct permissions
+      mkdir -p /var/log/tinyproxy
+      chown tinyproxy:tinyproxy /var/log/tinyproxy
+      # Restart Tinyproxy
+      systemctl restart tinyproxy
+      systemctl enable tinyproxy
+    EOT
+  }
+  depends_on = [google_project_organization_policy.ip_forward]
+}
+
+# ============================================
+# Step 14: Create a private Cloud DNS zone (optional)
+# ============================================
+resource "google_dns_managed_zone" "private_zone" {
+  count       = var.create_dns_zone ? 1 : 0
+  project     = var.networking_project_id
+  name        = var.dns_zone_name
+  dns_name    = var.dns_domain
+  description = "Private DNS zone for demo purposes"
+  visibility  = "private"
+  private_visibility_config {
+    networks {
+      network_url = google_compute_network.vpc_network.id
+    }
+  }
+}
+
+# ============================================
+# Step 15: Create a DNS A record for the proxy VM (optional)
+# ============================================
+resource "google_dns_record_set" "proxy_vm_record" {
+  count        = var.create_dns_zone && var.create_proxy_vm ? 1 : 0
+  project      = var.networking_project_id
+  managed_zone = google_dns_managed_zone.private_zone[0].name
+  name         = "proxy-vm.${var.dns_domain}"
+  type         = "A"
+  ttl          = 300
+  rrdatas      = [google_compute_instance.proxy_vm[0].network_interface[0].network_ip]
 }
