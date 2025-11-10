@@ -139,7 +139,8 @@ resource "google_project_organization_policy" "ip_forward" {
 resource "time_sleep" "wait_for_networking_aiplatform_api" {
   depends_on = [google_project_service.networking_aiplatform_api]
 
-  create_duration = "300s"  # 5 minutes
+  create_duration = "10s"
+  # create_duration = "300s"  # 5 minutes
 }
 
 # Wait 5 minutes after enabling Vertex AI API in service projects
@@ -147,7 +148,31 @@ resource "time_sleep" "wait_for_networking_aiplatform_api" {
 resource "time_sleep" "wait_for_service_aiplatform_api" {
   depends_on = [google_project_service.service_aiplatform_api]
 
-  create_duration = "300s"  # 5 minutes
+  create_duration = "10s"
+  # create_duration = "300s"  # 5 minutes
+}
+
+# ============================================
+# Generate service identity for services (IAM)
+# ============================================
+# This activates the service agent for a given API
+resource "google_project_service_identity" "networking_aiplatform_sa" {
+  provider = google-beta
+
+  project = var.networking_project_id
+  service = "aiplatform.googleapis.com"
+
+  depends_on = [google_project_service.networking_aiplatform_api]
+}
+
+resource "google_project_service_identity" "service_aiplatform_sa" {
+  for_each = toset(var.vertex_ai_service_project_ids)
+  provider = google-beta
+
+  project = each.key
+  service = "aiplatform.googleapis.com"
+
+  depends_on = [google_project_service.service_aiplatform_api]
 }
 
 # ============================================
@@ -338,30 +363,7 @@ resource "google_compute_network_attachment" "psc_attachments_service_projects" 
 }
 
 # ============================================
-# Step 4: Generate service identity for services (IAM)
-# ============================================
-# This activates the service agent for a given API
-resource "google_project_service_identity" "networking_aiplatform_sa" {
-  provider = google-beta
-
-  project = var.networking_project_id
-  service = "aiplatform.googleapis.com"
-
-  depends_on = [google_project_service.networking_aiplatform_api]
-}
-
-resource "google_project_service_identity" "service_aiplatform_sa" {
-  for_each = toset(var.vertex_ai_service_project_ids)
-  provider = google-beta
-
-  project = each.key
-  service = "aiplatform.googleapis.com"
-
-  depends_on = [google_project_service.service_aiplatform_api]
-}
-
-# ============================================
-# Step 4.1: Grant compute.networkUser role to service project Vertex AI service agents on the host project
+# Step 4: Grant compute.networkUser role to service project Vertex AI service agents on the host project
 # ============================================
 # Required when network attachments are created in service projects (Service Project Network Attachment Mode)
 # Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
