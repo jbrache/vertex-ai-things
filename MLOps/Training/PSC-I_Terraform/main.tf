@@ -381,7 +381,7 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
 }
 
 # ============================================
-# Step 4.2: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
+# Step 4.1: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
 # ============================================
 # In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
 resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
@@ -411,7 +411,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_service
 }
 
 # ============================================
-# Step 4.3: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
+# Step 4.2: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
 # ============================================
 # This is required for Service Project Network Attachment to allow service projects to use the network
 locals {
