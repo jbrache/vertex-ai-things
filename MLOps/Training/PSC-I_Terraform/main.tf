@@ -74,6 +74,7 @@ resource "google_project_service" "networking_dns_api" {
 }
 
 resource "google_project_service" "networking_aiplatform_api" {
+  count   = var.enable_shared_vpc ? 0 : 1
   project = var.networking_project_id
   service = "aiplatform.googleapis.com"
 
