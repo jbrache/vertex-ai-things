@@ -60,6 +60,14 @@ This module creates the necessary resources for a PSC-enabled network, including
 | `icmp_source_ranges` | Source IP ranges for ICMP | `["0.0.0.0/0"]` |
 | `enable_allow_all_firewall` | Enable all traffic rule | `false` |
 | `all_traffic_source_ranges` | Source ranges for all traffic | `["10.0.0.0/8"]` |
+| `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `false` |
+| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `false` |
+| `create_proxy_vm` | If true, creates a proxy VM in the first region. | `false` |
+| `proxy_vm_zone` | The zone for the proxy VM. Should be in the first region of the `regions` list. | `us-central1-a` |
+| `proxy_vm_machine_type` | The machine type for the proxy VM. | `e2-micro` |
+| `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `false` |
+| `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
+| `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
 
 ## Usage with Vertex AI
 
