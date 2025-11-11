@@ -2,6 +2,8 @@
 
 This Terraform configuration automates the setup of a Private Service Connect (PSC) Interface for Vertex AI, supporting both standalone and Shared VPC architectures.
 
+This terraform creates the resources created by this codelab: [Vertex AI Pipelines PSC Interface Explicit Proxy](https://codelabs.developers.google.com/pipelines-psc-interface-proxy)
+
 ## Overview
 
 This module creates the necessary resources for a PSC-enabled network, including:
@@ -80,6 +82,15 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `false` |
 | `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
 | `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
+| `image_name` | The name of the container image. | `nonrfc-ip-call` |
+| `artifact_registry_repository_id` | The ID of the Artifact Registry repository to create | `pipelines-test-repo-psc` |
+| `artifact_registry_location` | The location for the Artifact Registry repository (e.g., 'us' for multi-region) | `us` |
+| `artifact_registry_description` | Description for the Artifact Registry repository | `Vertex AI training test repository` |
+| `artifact_registry_format` | The format of the Artifact Registry repository | `DOCKER` |
+| `create_nat_gateway` | If true, creates a Cloud Router and a Cloud NAT gateway in the region. | `true` |
+| `create_class_e_vm` | If true, creates a class-e VM in the region. | `true` |
+| `vm_zone` | The zone for the VMs. Should be in the region. | `us-central1-a` |
+| `vm_machine_type` | The machine type for the VMs. | `e2-micro` |
 
 ## Usage with Vertex AI
 
@@ -90,41 +101,18 @@ This configuration supports two modes depending on the `enable_shared_vpc` varia
 -   A single network attachment is created in the networking project.
 -   Use this network attachment for Vertex AI resources in any service project.
 
-```bash
-NETWORK_ATTACHMENT=$(terraform output -raw network_attachment_self_link)
-
-gcloud ai custom-jobs create \
-  --project=YOUR_SERVICE_PROJECT_ID \
-  --region=us-central1 \
-  --display-name=my-psc-training-job \
-  --network=${NETWORK_ATTACHMENT} \
-  --worker-pool-spec=machine-type=n1-standard-4,replica-count=1,container-image-uri=gcr.io/your-image
-```
-
 ### 2. Service Project Network Attachment Mode (`enable_shared_vpc = true`)
 
 -   A full Shared VPC architecture is created.
 -   Each service project gets its own network attachment.
 -   When creating Vertex AI resources, use the network attachment from the *same* service project.
 
-```bash
-# Get the network attachment for a specific service project
-NETWORK_ATTACHMENT="projects/service-project-1/regions/us-central1/networkAttachments/vertex-ai-psc-attachment"
-
-gcloud ai custom-jobs create \
-  --project=service-project-1 \
-  --region=us-central1 \
-  --display-name=my-psc-training-job \
-  --network=${NETWORK_ATTACHMENT} \
-  --worker-pool-spec=machine-type=n1-standard-4,replica-count=1,container-image-uri=gcr.io/your-image
-```
-
 ## Files
 
 -   **main.tf**: Main Terraform configuration.
 -   **variables.tf**: Variable definitions.
 -   **outputs.tf**: Output values.
--   **terraform.tfvars**: Your variable values.
+-   **terraform-example.tfvars**: Your variable values.
 
 ## Cleanup
 

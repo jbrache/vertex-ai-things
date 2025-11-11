@@ -19,38 +19,22 @@
 # REQUIRED: Project and Region Configuration
 # ============================================
 # The networking project (Shared VPC host project) where VPC resources will be created
-networking_project_id = "YOUR_NETWORKING_PROJECT_ID"
+# networking_project_id = "YOUR_NETWORKING_PROJECT_ID"
+networking_project_id = "codelab-dev-jb0001"
 
-# List of Vertex AI service projects that will use the Shared VPC
-# Add all project IDs where Vertex AI workloads will run
-vertex_ai_service_project_ids = [
-  "YOUR_VERTEX_AI_PROJECT_1",
-  "YOUR_VERTEX_AI_PROJECT_2"
-  # Add more project IDs as needed
-]
+# Vertex AI service project that will use the Shared VPC
+# Project ID where Vertex AI workloads will run
+# vertex_ai_service_project_id = "YOUR_VERTEX_AI_PROJECT_1"
+vertex_ai_service_project_id = "codelab-dev-jb0001"
 
 # List of regions where subnets and network attachments will be created
 # You can specify multiple regions for multi-region deployment
-regions = ["us-central1"]
-# regions = ["us-central1", "us-west1"]
-
-# Optional: Specify custom CIDR ranges for each region
-# If not specified, default ranges will be automatically generated (10.0.0.0/24, 10.1.0.0/24, etc.)
-subnet_cidr_ranges = {
-  "us-central1" = "10.0.0.0/24"
-  # "us-west1"    = "10.1.0.0/24"
-  # Add more regions and their CIDR ranges as needed
-  # "europe-west1" = "10.2.0.0/24"
-  # "asia-east1"   = "10.3.0.0/24"
-}
+region = "us-central1"
 
 # ============================================
 # Network Configuration
 # ============================================
-network_name = "vertex-vpc-dev"
-
-# Postfix for subnet names - region will be used as prefix (e.g., "us-central1-vertex-psci")
-subnet_name_postfix = "vertex-psci"
+network_name = "consumer-vpc"
 
 # ============================================
 # Network Attachment Configuration
@@ -89,11 +73,13 @@ create_vertex_test_container = true
 create_training_job = true
 
 # ============================================
-# Proxy VM Configuration
+# Proxy VM and Class E VM Configuration
 # ============================================
-create_proxy_vm = false
+create_proxy_vm = true
+create_class_e_vm = true
+create_nat_gateway = true
 
 # ============================================
 # Cloud DNS Configuration
 # ============================================
-create_dns_zone = false
+create_dns_zone = true

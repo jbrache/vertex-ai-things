@@ -1,0 +1,44 @@
+{
+  "display_name": "Test-PSC-I-nonRFC-20251111143540",
+  "job_spec": {
+    "worker_pool_specs": [
+      {
+        "machine_spec": {
+          "machine_type": "n2-standard-4"
+        },
+        "replica_count": 1,
+        "container_spec": {
+          "image_uri": "us-docker.pkg.dev/codelab-dev-jb0001/pipelines-test-repo-psc/nonrfc-ip-call:latest",
+          "args": [
+            "--sleep=600s"
+          ],
+          "env": [{
+            "name": "NONRFC_URL",
+            "value": "http://class-e-vm.demo.com"
+          },
+          {
+            "name": "PROXY_VM_IP",
+            "value": "proxy-vm.demo.com"
+          },
+          {
+            "name": "PROXY_VM_PORT",
+            "value": "8888"
+          }]
+        },
+        "disk_spec": {
+          "boot_disk_type": "pd-ssd",
+          "boot_disk_size_gb": 100
+        }
+      }
+    ],
+    "service_account": "938256117653-compute@developer.gserviceaccount.com",
+    "psc_interface_config": {
+      "network_attachment": "projects/codelab-dev-jb0001/regions/us-central1/networkAttachments/us-central1-vertex-psci"
+      ,"dns_peering_configs": [{"domain": "demo.com.","target_project": "codelab-dev-jb0001","target_network": "consumer-vpc"}]
+    },
+    "enable_web_access": true
+  },
+  "labels": {
+    "network_type": "psc-i"
+  }
+}

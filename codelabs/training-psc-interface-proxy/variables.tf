@@ -22,21 +22,15 @@ variable "networking_project_id" {
   type        = string
 }
 
-variable "vertex_ai_service_project_ids" {
-  description = "List of Google Cloud project IDs where Vertex AI services will run. The Vertex AI service agents from these projects will be granted necessary permissions in the networking project."
-  type        = list(string)
+variable "vertex_ai_service_project_id" {
+  description = "The Google Cloud project ID where Vertex AI services will run. The Vertex AI service agent from this project will be granted necessary permissions in the networking project."
+  type        = string
 }
 
-variable "regions" {
-  description = "List of regions where subnets and network attachments will be created"
-  type        = list(string)
-  default     = ["us-central1"]
-}
-
-variable "subnet_cidr_ranges" {
-  description = "Map of region names to subnet CIDR ranges. If not specified for a region, a default range will be used."
-  type        = map(string)
-  default     = {}
+variable "region" {
+  description = "The region where resources will be created"
+  type        = string
+  default     = "us-central1"
 }
 
 # ============================================
@@ -45,13 +39,7 @@ variable "subnet_cidr_ranges" {
 variable "network_name" {
   description = "Name of the VPC network to create"
   type        = string
-  default     = "vertex-vpc-dev"
-}
-
-variable "subnet_name_postfix" {
-  description = "Postfix for subnet names. Region name will be used as prefix (e.g., 'us-central1-vertex-psci')"
-  type        = string
-  default     = "vertex-psci"
+  default     = "consumer-vpc"
 }
 
 # ============================================
@@ -85,7 +73,7 @@ variable "icmp_source_ranges" {
 }
 
 variable "enable_allow_all_firewall" {
-  description = "Enable firewall rule that allows all ICMP, TCP, and UDP traffic (optional)"
+  description = "Enable firewall rule to allow all internal traffic."
   type        = bool
   default     = false
 }
@@ -126,7 +114,13 @@ variable "create_vertex_test_container" {
 variable "artifact_registry_repository_id" {
   description = "The ID of the Artifact Registry repository to create"
   type        = string
-  default     = "vertex-training-test"
+  default     = "pipelines-test-repo-psc"
+}
+
+variable "image_name" {
+  description = "The name of the container image."
+  type        = string
+  default     = "nonrfc-ip-call"
 }
 
 variable "artifact_registry_location" {
@@ -148,22 +142,34 @@ variable "artifact_registry_format" {
 }
 
 # ============================================
-# Proxy VM Configuration
+# Proxy VM and Class E VM Configuration
 # ============================================
-variable "create_proxy_vm" {
-  description = "If true, creates a proxy VM in the first region."
+variable "create_nat_gateway" {
+  description = "If true, creates a Cloud Router and a Cloud NAT gateway in the region."
   type        = bool
-  default     = false
+  default     = true
 }
 
-variable "proxy_vm_zone" {
-  description = "The zone for the proxy VM. Should be in the first region of the `regions` list."
+variable "create_proxy_vm" {
+  description = "If true, creates a proxy VM in the region."
+  type        = bool
+  default     = true
+}
+
+variable "create_class_e_vm" {
+  description = "If true, creates a class-e VM in the region."
+  type        = bool
+  default     = true
+}
+
+variable "vm_zone" {
+  description = "The zone for the VMs. Should be in the region."
   type        = string
   default     = "us-central1-a"
 }
 
-variable "proxy_vm_machine_type" {
-  description = "The machine type for the proxy VM."
+variable "vm_machine_type" {
+  description = "The machine type for the VMs."
   type        = string
   default     = "e2-micro"
 }
@@ -174,13 +180,13 @@ variable "proxy_vm_machine_type" {
 variable "create_dns_zone" {
   description = "If true, creates a private Cloud DNS zone and an A record for the proxy VM."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "dns_zone_name" {
   description = "The name of the Cloud DNS managed zone."
   type        = string
-  default     = "private-dns-demo"
+  default     = "private-dns-codelab"
 }
 
 variable "dns_domain" {

@@ -1,0 +1,30 @@
+# Cloud Build configuration for building and pushing the Vertex AI training container
+# This file defines the steps to build a Docker image and push it to Artifact Registry
+
+steps:
+  # Build the Docker image with both tags
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:${_IMAGE_TAG}',
+      '-t', '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:latest',
+      '.'
+    ]
+
+# Images to be pushed to Artifact Registry
+# Cloud Build automatically pushes these after the build completes
+images:
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:${_IMAGE_TAG}'
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:latest'
+
+# Substitution variables
+substitutions:
+  _ARTIFACT_REGISTRY_LOCATION: 'us'
+  _ARTIFACT_REGISTRY_REPO: 'pipelines-test-repo-psc'
+  _IMAGE_NAME: 'nonrfc-ip-call'
+  _IMAGE_TAG: 'latest'
+
+# Cloud Build options
+options:
+  # machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
