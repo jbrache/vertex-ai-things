@@ -69,28 +69,19 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | `subnet_name` | Name of the subnet | `vertex-ai-psc-subnet` |
 | `subnet_primary_range` | Primary IP CIDR range | `10.0.0.0/24` |
 | `enable_shared_vpc` | Enable Shared VPC configuration | `false` |
-| `ssh_source_ranges` | Source IP ranges for SSH | `["0.0.0.0/0"]` |
-| `https_source_ranges` | Source IP ranges for HTTPS | `["0.0.0.0/0"]` |
-| `icmp_source_ranges` | Source IP ranges for ICMP | `["0.0.0.0/0"]` |
 | `enable_allow_all_firewall` | Enable all traffic rule | `false` |
 | `all_traffic_source_ranges` | Source ranges for all traffic | `["10.0.0.0/8"]` |
-| `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `false` |
-| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `false` |
-| `create_proxy_vm` | If true, creates a proxy VM in the first region. | `false` |
-| `proxy_vm_zone` | The zone for the proxy VM. Should be in the first region of the `regions` list. | `us-central1-a` |
-| `proxy_vm_machine_type` | The machine type for the proxy VM. | `e2-micro` |
-| `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `false` |
-| `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
-| `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
-| `image_name` | The name of the container image. | `nonrfc-ip-call` |
-| `artifact_registry_repository_id` | The ID of the Artifact Registry repository to create | `pipelines-test-repo-psc` |
-| `artifact_registry_location` | The location for the Artifact Registry repository (e.g., 'us' for multi-region) | `us` |
-| `artifact_registry_description` | Description for the Artifact Registry repository | `Vertex AI training test repository` |
-| `artifact_registry_format` | The format of the Artifact Registry repository | `DOCKER` |
 | `create_nat_gateway` | If true, creates a Cloud Router and a Cloud NAT gateway in the region. | `true` |
 | `create_class_e_vm` | If true, creates a class-e VM in the region. | `true` |
 | `vm_zone` | The zone for the VMs. Should be in the region. | `us-central1-a` |
 | `vm_machine_type` | The machine type for the VMs. | `e2-micro` |
+| `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `false` |
+| `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
+| `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
+| `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `false` |
+| `artifact_registry_repository_id` | The ID of the Artifact Registry repository to create | `pipelines-test-repo-psc` |
+| `image_name` | The name of the container image. | `nonrfc-ip-call` |
+| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `false` |
 
 ## Usage with Vertex AI
 

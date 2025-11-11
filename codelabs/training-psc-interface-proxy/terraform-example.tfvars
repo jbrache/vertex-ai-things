@@ -45,14 +45,6 @@ network_attachment_name_postfix = "vertex-psci"
 # ============================================
 # Firewall Configuration
 # ============================================
-# SSH access on TCP port 22
-ssh_source_ranges = ["0.0.0.0/0"]  # Restrict this to your IP ranges for better security
-
-# HTTPS traffic on TCP port 443
-https_source_ranges = ["0.0.0.0/0"]
-
-# ICMP traffic (ping)
-icmp_source_ranges = ["0.0.0.0/0"]
 
 # Optional: Enable firewall rule that allows all ICMP, TCP, and UDP traffic
 enable_allow_all_firewall = false

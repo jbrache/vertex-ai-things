@@ -54,24 +54,6 @@ variable "network_attachment_name_postfix" {
 # ============================================
 # Firewall Configuration
 # ============================================
-variable "ssh_source_ranges" {
-  description = "Source IP ranges allowed for SSH access (TCP port 22)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "https_source_ranges" {
-  description = "Source IP ranges allowed for HTTPS traffic (TCP port 443)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "icmp_source_ranges" {
-  description = "Source IP ranges allowed for ICMP traffic (ping)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
 variable "enable_allow_all_firewall" {
   description = "Enable firewall rule to allow all internal traffic."
   type        = bool
