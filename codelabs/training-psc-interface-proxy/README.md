@@ -63,11 +63,9 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | Variable | Description | Default |
 |---|---|---|
 | `networking_project_id` | Networking project ID (VPC Host project) | **Required** |
-| `vertex_ai_service_project_ids` | List of Vertex AI service project IDs | **Required** |
+| `vertex_ai_service_project_ids` | Vertex AI service project ID (Can be the same as the networking project) | **Required** |
 | `region` | Region for resources | **Required** |
-| `network_name` | Name of the VPC network | `vertex-ai-psc-network` |
-| `subnet_name` | Name of the subnet | `vertex-ai-psc-subnet` |
-| `subnet_primary_range` | Primary IP CIDR range | `10.0.0.0/24` |
+| `network_name` | Name of the VPC network | `consumer-vpc` |
 | `enable_shared_vpc` | Enable Shared VPC configuration | `false` |
 | `enable_allow_all_firewall` | Enable all traffic rule | `false` |
 | `all_traffic_source_ranges` | Source ranges for all traffic | `["10.0.0.0/8"]` |
@@ -75,13 +73,13 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | `create_class_e_vm` | If true, creates a class-e VM in the region. | `true` |
 | `vm_zone` | The zone for the VMs. Should be in the region. | `us-central1-a` |
 | `vm_machine_type` | The machine type for the VMs. | `e2-micro` |
-| `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `false` |
+| `create_dns_zone` | If true, creates a private Cloud DNS zone and an A record for the proxy VM. | `true` |
 | `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
 | `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
-| `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `false` |
+| `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `true` |
 | `artifact_registry_repository_id` | The ID of the Artifact Registry repository to create | `pipelines-test-repo-psc` |
 | `image_name` | The name of the container image. | `nonrfc-ip-call` |
-| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `false` |
+| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `true` |
 
 ## Usage with Vertex AI
 

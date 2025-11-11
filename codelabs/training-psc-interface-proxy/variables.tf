@@ -81,7 +81,7 @@ variable "enable_shared_vpc" {
 variable "create_training_job" {
   description = "If true, creates a Vertex AI custom training job in each service project using the created resources."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # ============================================
@@ -90,7 +90,7 @@ variable "create_training_job" {
 variable "create_vertex_test_container" {
   description = "Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "artifact_registry_repository_id" {
