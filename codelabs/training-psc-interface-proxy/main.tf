@@ -114,9 +114,7 @@ resource "google_storage_bucket" "vertex_ai_bucket" {
   force_destroy               = true
   uniform_bucket_level_access = true
 
-  depends_on = [
-    google_project_service.service_apis["storage.googleapis.com"]
-  ]
+  depends_on = [google_project_service.service_apis["storage.googleapis.com"]]
 }
 
 # ============================================
@@ -142,28 +140,22 @@ resource "google_project_organization_policy" "ip_forward" {
 resource "google_project_service_identity" "networking_aiplatform_sa" {
   count   = var.enable_shared_vpc ? 0 : 1
   provider = google-beta
-
   project = var.networking_project_id
   service = "aiplatform.googleapis.com"
-
   depends_on = [google_project_service.networking_apis]
 }
 
 resource "google_project_service_identity" "service_aiplatform_sa" {
   provider = google-beta
-
   project = var.vertex_ai_service_project_id
   service = "aiplatform.googleapis.com"
-
   depends_on = [google_project_service.service_apis["aiplatform.googleapis.com"]]
 }
 
 resource "google_project_service_identity" "service_compute_sa" {
   provider = google-beta
-
   project = var.vertex_ai_service_project_id
   service = "compute.googleapis.com"
-
   depends_on = [google_project_service.service_apis["compute.googleapis.com"]]
 }
 
@@ -188,10 +180,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mo
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.networking_aiplatform_sa
-  ]
+  depends_on = [google_project_service_identity.networking_aiplatform_sa]
 }
 
 # In Service Project Network Attachment Mode, grant the role to the service project's own service agent.
@@ -200,10 +189,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_service
   project = var.vertex_ai_service_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.service_aiplatform_sa
-  ]
+  depends_on = [google_project_service_identity.service_aiplatform_sa]
 }
 
 # ============================================
@@ -226,10 +212,7 @@ resource "google_project_iam_member" "service_dns_peer" {
   project = var.networking_project_id
   role    = "roles/dns.peer"
   member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.service_aiplatform_sa
-  ]
+  depends_on = [google_project_service_identity.service_aiplatform_sa]
 }
 
 # ============================================
@@ -239,9 +222,7 @@ resource "google_project_iam_member" "compute_engine_aiplatform_user" {
   project = var.vertex_ai_service_project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
+  depends_on = [google_project_service_identity.service_compute_sa]
 }
 
 # ============================================
@@ -251,9 +232,7 @@ resource "google_project_iam_member" "compute_engine_storage_admin" {
   project = var.vertex_ai_service_project_id
   role    = "roles/storage.admin"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
+  depends_on = [google_project_service_identity.service_compute_sa]
 }
 
 # ============================================
@@ -264,9 +243,16 @@ resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
   project = var.vertex_ai_service_project_id
   role    = "roles/cloudbuild.builds.builder"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
+  depends_on = [google_project_service_identity.service_compute_sa]
+}
+
+# ============================================
+# Step 1.7: Wait for IAM permissions to propagate before building container
+# ============================================
+resource "time_sleep" "wait_for_iam_propagation" {
+  count = var.create_vertex_test_container ? 1 : 0
+  depends_on = [google_project_iam_member.compute_engine_cloudbuild_builder]
+  create_duration = "30s"
 }
 
 # ============================================
@@ -280,9 +266,7 @@ resource "google_artifact_registry_repository" "vertex_training_repositories" {
   description   = var.artifact_registry_description
   format        = var.artifact_registry_format
 
-  depends_on = [
-    google_project_service.service_apis["artifactregistry.googleapis.com"]
-  ]
+  depends_on = [google_project_service.service_apis["artifactregistry.googleapis.com"]]
 }
 
 # Automatically build and push the container when Terraform is applied
@@ -309,7 +293,7 @@ resource "null_resource" "build_vertex_training_container" {
   depends_on = [
     google_project_service.service_apis["cloudbuild.googleapis.com"],
     google_artifact_registry_repository.vertex_training_repositories,
-    google_project_iam_member.compute_engine_cloudbuild_builder,
+    time_sleep.wait_for_iam_propagation,
   ]
 }
 
@@ -322,9 +306,7 @@ resource "google_compute_network" "vpc_network" {
   project                 = var.networking_project_id
   description             = "VPC network for Private Service Connect Interface to Vertex AI"
 
-  depends_on = [
-    google_project_service.networking_apis["compute.googleapis.com"],
-  ]
+  depends_on = [google_project_service.networking_apis["compute.googleapis.com"]]
 }
 
 # ============================================
@@ -362,9 +344,7 @@ resource "google_compute_shared_vpc_host_project" "host" {
   count   = var.enable_shared_vpc ? 1 : 0
   project = var.networking_project_id
 
-  depends_on = [
-    google_compute_network.vpc_network
-  ]
+  depends_on = [google_compute_network.vpc_network]
 }
 
 # ============================================
@@ -375,9 +355,7 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
   host_project    = var.networking_project_id
   service_project = var.vertex_ai_service_project_id
 
-  depends_on = [
-    google_compute_shared_vpc_host_project.host
-  ]
+  depends_on = [google_compute_shared_vpc_host_project.host]
 }
 
 # ============================================
@@ -419,9 +397,7 @@ resource "google_compute_network_attachment" "psc_attachment_service_project" {
     ignore_changes = all
   }
 
-  depends_on = [
-    google_compute_shared_vpc_service_project.service_project
-  ]
+  depends_on = [google_compute_shared_vpc_service_project.service_project]
 }
 
 # ============================================
@@ -740,9 +716,7 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
     EOT
   }
 
-  depends_on = [
-    null_resource.build_vertex_training_container
-  ]
+  depends_on = [null_resource.build_vertex_training_container]
 }
 
 # ============================================
@@ -830,7 +804,5 @@ resource "null_resource" "submit_pipeline_dns_peering" {
     EOT
   }
 
-  depends_on = [
-    null_resource.build_vertex_training_container
-  ]
+  depends_on = [null_resource.build_vertex_training_container]
 }
