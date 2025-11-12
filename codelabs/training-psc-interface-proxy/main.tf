@@ -390,6 +390,7 @@ resource "google_compute_network_attachment" "psc_attachment_networking_project"
   # Once Vertex AI Jobs run, some attributes will be managed by Vertex AI
   lifecycle {
     ignore_changes = all
+    prevent_destroy = true
   }
 }
 
@@ -410,6 +411,7 @@ resource "google_compute_network_attachment" "psc_attachment_service_project" {
   # Once Vertex AI Jobs run, some attributes will be managed by Vertex AI
   lifecycle {
     ignore_changes = all
+    prevent_destroy = true
   }
 
   depends_on = [google_compute_shared_vpc_service_project.service_project]
