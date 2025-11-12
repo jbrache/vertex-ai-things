@@ -79,7 +79,7 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | `create_vertex_test_container` | Enable creation of Artifact Registry repository and Cloud Build API for Vertex AI training containers | `true` |
 | `artifact_registry_repository_id` | The ID of the Artifact Registry repository to create | `pipelines-test-repo-psc` |
 | `image_name` | The name of the container image. | `nonrfc-ip-call` |
-| `create_training_job` | If true, creates a Vertex AI custom training job in each service project using the created resources. | `true` |
+| `create_training_job` | If true, creates a Vertex AI **custom training job** and **pipeline** job in the service project using the created resources. | `true` |
 
 ## Usage with Vertex AI
 
