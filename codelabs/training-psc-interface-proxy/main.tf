@@ -262,7 +262,7 @@ resource "time_sleep" "wait_for_iam_propagation" {
     google_project_iam_member.service_aiplatform_network_user_service_mode,
     google_project_iam_member.service_aiplatform_network_admin_host_mode,
     google_project_iam_member.service_aiplatform_network_admin_service_mode,
-    google_project_iam_member.service_aiplatform_network_user,
+    google_compute_subnetwork_iam_member.service_aiplatform_network_user,
     google_project_iam_member.service_dns_peer,
     google_project_iam_member.service_compute_engine_aiplatform_user,
     google_project_iam_member.service_compute_engine_storage_admin,
