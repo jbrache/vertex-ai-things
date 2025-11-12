@@ -168,7 +168,109 @@ resource "google_project_service_identity" "service_compute_sa" {
 }
 
 # ============================================
-# Create Artifact Registry repositories in each Vertex AI service project
+# Step 1: Grant compute.networkUser role to service project Vertex AI service agents on the host project
+# ============================================
+# Required when network attachments are created in service projects (Service Project Network Attachment Mode)
+# Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
+resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
+  count   = var.enable_shared_vpc ? 1 : 0
+  project = var.networking_project_id
+  role    = "roles/compute.networkUser"
+  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+}
+
+# ============================================
+# Step 1.1: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
+# ============================================
+# In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
+resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
+  count   = var.enable_shared_vpc ? 0 : 1
+  project = var.networking_project_id
+  role    = "roles/compute.networkAdmin"
+  member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_project_service_identity.networking_aiplatform_sa
+  ]
+}
+
+# In Service Project Network Attachment Mode, grant the role to the service project's own service agent.
+resource "google_project_iam_member" "networking_vertex_ai_network_admin_service_mode" {
+  count   = var.enable_shared_vpc ? 1 : 0
+  project = var.vertex_ai_service_project_id
+  role    = "roles/compute.networkAdmin"
+  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_project_service_identity.service_aiplatform_sa
+  ]
+}
+
+# ============================================
+# Step 1.2: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
+# ============================================
+# This is required for Service Project Network Attachment to allow service projects to use the network
+resource "google_compute_subnetwork_iam_member" "vertex_ai_network_user" {
+  count      = var.enable_shared_vpc ? 1 : 0
+  project    = var.networking_project_id
+  region     = var.region
+  subnetwork = google_compute_subnetwork.intf_subnet.name
+  role       = "roles/compute.networkUser"
+  member     = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+}
+
+# ============================================
+# Step 1.3: Assign DNS Peer role to service projects' Vertex AI service agents in the networking project (host)
+# ============================================
+resource "google_project_iam_member" "service_dns_peer" {
+  project = var.networking_project_id
+  role    = "roles/dns.peer"
+  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+
+  depends_on = [
+    google_project_service_identity.service_aiplatform_sa
+  ]
+}
+
+# ============================================
+# Step 1.4: Grant aiplatform.user role to the default compute engine service account
+# ============================================
+resource "google_project_iam_member" "compute_engine_aiplatform_user" {
+  project = var.vertex_ai_service_project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [
+    google_project_service_identity.service_compute_sa
+  ]
+}
+
+# ============================================
+# Step 1.5: Grant storage.admin role to the default compute engine service account
+# ============================================
+resource "google_project_iam_member" "compute_engine_storage_admin" {
+  project = var.vertex_ai_service_project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [
+    google_project_service_identity.service_compute_sa
+  ]
+}
+
+# ============================================
+# Step 1.6: Grant Cloud Build Builder role to Compute Engine default service account
+# ============================================
+resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
+  count   = var.create_vertex_test_container ? 1 : 0
+  project = var.vertex_ai_service_project_id
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
+  depends_on = [
+    google_project_service_identity.service_compute_sa
+  ]
+}
+
+# ============================================
+# Step 2: Create Artifact Registry repositories in each Vertex AI service project
 # ============================================
 resource "google_artifact_registry_repository" "vertex_training_repositories" {
   count         = var.create_vertex_test_container ? 1 : 0
@@ -212,7 +314,7 @@ resource "null_resource" "build_vertex_training_container" {
 }
 
 # ============================================
-# Step 1: Create a VPC network in the networking project (VPC host Project)
+# Step 3: Create a VPC network in the networking project (VPC host Project)
 # ============================================
 resource "google_compute_network" "vpc_network" {
   name                    = var.network_name
@@ -226,7 +328,7 @@ resource "google_compute_network" "vpc_network" {
 }
 
 # ============================================
-# Step 2: Create subnets in the networking project
+# Step 3.1: Create subnets in the networking project
 # ============================================
 resource "google_compute_subnetwork" "class_e_subnet" {
   name          = "class-e-subnet"
@@ -254,7 +356,7 @@ resource "google_compute_subnetwork" "intf_subnet" {
 }
 
 # ============================================
-# Step 2.5: Enable Shared VPC on the VPC Host project (optional)
+# Step 3.2: Enable Shared VPC on the VPC Host project (optional)
 # ============================================
 resource "google_compute_shared_vpc_host_project" "host" {
   count   = var.enable_shared_vpc ? 1 : 0
@@ -266,7 +368,7 @@ resource "google_compute_shared_vpc_host_project" "host" {
 }
 
 # ============================================
-# Step 2.6: Attach service projects to the Shared VPC Host project (optional)
+# Step 3.3: Attach service projects to the Shared VPC Host project (optional)
 # ============================================
 resource "google_compute_shared_vpc_service_project" "service_project" {
   count   = var.enable_shared_vpc ? 1 : 0
@@ -279,7 +381,7 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
 }
 
 # ============================================
-# Step 3: Create network attachments in each region in the networking project (VPC Host Project Network Attachment Mode only)
+# Step 3.4: Create network attachments in each region in the networking project (VPC Host Project Network Attachment Mode only)
 # ============================================
 # When enable_shared_vpc = false, network attachments are created in the networking project
 resource "google_compute_network_attachment" "psc_attachments" {
@@ -351,109 +453,7 @@ resource "google_compute_router_nat" "nat" {
 }
 
 # ============================================
-# Step 5: Grant compute.networkUser role to service project Vertex AI service agents on the host project
-# ============================================
-# Required when network attachments are created in service projects (Service Project Network Attachment Mode)
-# Reference: https://cloud.google.com/vertex-ai/docs/general/private-service-connect#shared-vpc
-resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
-  count   = var.enable_shared_vpc ? 1 : 0
-  project = var.networking_project_id
-  role    = "roles/compute.networkUser"
-  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-}
-
-# ============================================
-# Step 5.1: Grant compute.networkAdmin role to the appropriate Vertex AI service agent
-# ============================================
-# In VPC Host Project Network Attachment Mode, grant the role to the networking project's service agent.
-resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mode" {
-  count   = var.enable_shared_vpc ? 0 : 1
-  project = var.networking_project_id
-  role    = "roles/compute.networkAdmin"
-  member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.networking_aiplatform_sa
-  ]
-}
-
-# In Service Project Network Attachment Mode, grant the role to the service project's own service agent.
-resource "google_project_iam_member" "networking_vertex_ai_network_admin_service_mode" {
-  count   = var.enable_shared_vpc ? 1 : 0
-  project = var.vertex_ai_service_project_id
-  role    = "roles/compute.networkAdmin"
-  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.service_aiplatform_sa
-  ]
-}
-
-# ============================================
-# Step 5.2: Grant compute.networkUser role to Vertex AI service agents on each subnet (optional)
-# ============================================
-# This is required for Service Project Network Attachment to allow service projects to use the network
-resource "google_compute_subnetwork_iam_member" "vertex_ai_network_user" {
-  count      = var.enable_shared_vpc ? 1 : 0
-  project    = var.networking_project_id
-  region     = var.region
-  subnetwork = google_compute_subnetwork.intf_subnet.name
-  role       = "roles/compute.networkUser"
-  member     = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-}
-
-# ============================================
-# Step 5.3: Assign DNS Peer role to service projects' Vertex AI service agents in the networking project (host)
-# ============================================
-resource "google_project_iam_member" "service_dns_peer" {
-  project = var.networking_project_id
-  role    = "roles/dns.peer"
-  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-
-  depends_on = [
-    google_project_service_identity.service_aiplatform_sa
-  ]
-}
-
-# ============================================
-# Step 5.4: Grant aiplatform.user role to the default compute engine service account
-# ============================================
-resource "google_project_iam_member" "compute_engine_aiplatform_user" {
-  project = var.vertex_ai_service_project_id
-  role    = "roles/aiplatform.user"
-  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
-}
-
-# ============================================
-# Step 5.5: Grant storage.admin role to the default compute engine service account
-# ============================================
-resource "google_project_iam_member" "compute_engine_storage_admin" {
-  project = var.vertex_ai_service_project_id
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
-}
-
-# ============================================
-# Step 5.6: Grant Cloud Build Builder role to Compute Engine default service account
-# ============================================
-resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
-  count   = var.create_vertex_test_container ? 1 : 0
-  project = var.vertex_ai_service_project_id
-  role    = "roles/cloudbuild.builds.builder"
-  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [
-    google_project_service_identity.service_compute_sa
-  ]
-}
-
-# ============================================
-# Step 6: Create firewall rule that allows SSH access from IAP
+# Step 5: Create firewall rule that allows SSH access from IAP
 # ============================================
 resource "google_compute_firewall" "allow_ssh_iap" {
   name    = "ssh-iap-consumer"
@@ -468,7 +468,7 @@ resource "google_compute_firewall" "allow_ssh_iap" {
 }
 
 # ============================================
-# Step 6.1: Create firewall rule that allows access from the PSC Network Attachment subnet to the proxy-vm
+# Step 5.1: Create firewall rule that allows access from the PSC Network Attachment subnet to the proxy-vm
 # ============================================
 resource "google_compute_firewall" "allow_access_to_proxy" {
   name    = "allow-access-to-proxy"
@@ -485,7 +485,7 @@ resource "google_compute_firewall" "allow_access_to_proxy" {
 }
 
 # ============================================
-# Step 6.2: Create firewall rule that allows access from the proxy-vm subnet to the class-e subnet
+# Step 5.2: Create firewall rule that allows access from the proxy-vm subnet to the class-e subnet
 # ============================================
 resource "google_compute_firewall" "allow_access_to_class_e" {
   name    = "allow-access-to-class-e"
@@ -502,7 +502,7 @@ resource "google_compute_firewall" "allow_access_to_class_e" {
 }
 
 # ============================================
-# Step 6.3: Create firewall rule that allows all ICMP, TCP, and UDP traffic (optional)
+# Step 5.3: Create firewall rule that allows all ICMP, TCP, and UDP traffic (optional)
 # ============================================
 # Uncomment if you need to allow all internal traffic
 resource "google_compute_firewall" "allow_all_internal" {
@@ -526,7 +526,7 @@ resource "google_compute_firewall" "allow_all_internal" {
 }
 
 # ============================================
-# Step 7: Create a proxy VM (optional)
+# Step 6: Create a proxy VM (optional)
 # ============================================
 resource "google_compute_instance" "proxy_vm" {
   count        = var.create_proxy_vm ? 1 : 0
@@ -588,7 +588,7 @@ resource "google_compute_instance" "proxy_vm" {
 }
 
 # ============================================
-# Step 7.1: Create a class-e VM (optional)
+# Step 6.1: Create a class-e VM (optional)
 # ============================================
 resource "google_compute_instance" "class_e_vm" {
   count        = var.create_class_e_vm ? 1 : 0
@@ -621,7 +621,7 @@ resource "google_compute_instance" "class_e_vm" {
 }
 
 # ============================================
-# Step 8: Create a private Cloud DNS zone (optional)
+# Step 7: Create a private Cloud DNS zone (optional)
 # ============================================
 resource "google_dns_managed_zone" "private_zone" {
   count       = var.create_dns_zone ? 1 : 0
@@ -638,7 +638,7 @@ resource "google_dns_managed_zone" "private_zone" {
 }
 
 # ============================================
-# Step 8.1: Create a DNS A record for the proxy VM (optional)
+# Step 7.1: Create a DNS A record for the proxy VM (optional)
 # ============================================
 resource "google_dns_record_set" "proxy_vm_record" {
   count        = var.create_dns_zone && var.create_proxy_vm ? 1 : 0
@@ -651,7 +651,7 @@ resource "google_dns_record_set" "proxy_vm_record" {
 }
 
 # ============================================
-# Step 8.2: Create a DNS A record for the class-e VM (optional)
+# Step 7.2: Create a DNS A record for the class-e VM (optional)
 # ============================================
 resource "google_dns_record_set" "class_e_vm_record" {
   count        = var.create_dns_zone && var.create_class_e_vm ? 1 : 0
@@ -664,7 +664,7 @@ resource "google_dns_record_set" "class_e_vm_record" {
 }
 
 # ============================================
-# Step 9: Create a Vertex AI Custom Job in the service project using the REST API
+# Step 8: Create a Vertex AI Custom Job in the service project using the REST API
 # ============================================
 # Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
@@ -743,14 +743,10 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
   depends_on = [
     null_resource.build_vertex_training_container
   ]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # ============================================
-# Step 10: Create a Vertex AI Pipeline Job the service project using the REST API
+# Step 9: Create a Vertex AI Pipeline Job the service project using the REST API
 # ============================================
 # Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
@@ -841,8 +837,4 @@ resource "null_resource" "submit_pipeline_dns_peering" {
   depends_on = [
     null_resource.build_vertex_training_container
   ]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
