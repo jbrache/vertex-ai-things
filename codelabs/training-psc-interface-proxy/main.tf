@@ -384,7 +384,7 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
 # Step 3.4: Create network attachments in each region in the networking project (VPC Host Project Network Attachment Mode only)
 # ============================================
 # When enable_shared_vpc = false, network attachments are created in the networking project
-resource "google_compute_network_attachment" "psc_attachments" {
+resource "google_compute_network_attachment" "psc_attachment_networking_project" {
   count       = var.enable_shared_vpc ? 0 : 1
   name        = "${var.region}-${var.network_attachment_name_postfix}"
   region      = var.region
@@ -404,7 +404,7 @@ resource "google_compute_network_attachment" "psc_attachments" {
 # Step 3.5: Create network attachments in each region for service projects (Service Project Network Attachment Mode only)
 # ============================================
 # When enable_shared_vpc = true, network attachments are created in each Vertex AI service project for each region
-resource "google_compute_network_attachment" "psc_attachments_service_project" {
+resource "google_compute_network_attachment" "psc_attachment_service_project" {
   count       = var.enable_shared_vpc ? 1 : 0
   name        = "${var.region}-${var.network_attachment_name_postfix}"
   region      = var.region
@@ -675,8 +675,8 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
 
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
-    image_uri          = var.create_vertex_test_container ? "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest" : ""
-    network_attachment = "${var.enable_shared_vpc ? "projects/${var.vertex_ai_service_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}" : "projects/${var.networking_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}"}"
+    image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
+    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].name}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].name}"
     # Force submitting a new job on every apply:
     timestamp = timestamp()
   }
@@ -768,16 +768,12 @@ locals {
 
   updated_pipeline_spec = merge(local.pipeline_decoded_yaml, {
     defaultPipelineRoot = "${google_storage_bucket.vertex_ai_bucket.url}/pipeline_root/intro"
-    
     # LEVEL 1: Merge into existing deploymentSpec to preserve its sibling fields
     deploymentSpec = merge(local.pipeline_decoded_yaml.deploymentSpec, {
-      
       # LEVEL 2: Merge into existing executors to preserve other executors
       executors = merge(local.pipeline_decoded_yaml.deploymentSpec.executors, {
-        
         # LEVEL 3: Merge into the specific executor to preserve its other fields (e.g. args, command)
         "exec-dns-peering-test-op" = merge(local.target_executor, {
-          
           # LEVEL 4: Merge into the container to update only the image
           container = merge(local.target_executor.container, {
             image = "${var.artifact_registry_location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${var.artifact_registry_repository_id}/${var.image_name}:latest"
@@ -795,8 +791,8 @@ resource "null_resource" "submit_pipeline_dns_peering" {
 
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
-    image_uri          = var.create_vertex_test_container ? "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest" : ""
-    network_attachment = "${var.enable_shared_vpc ? "projects/${var.vertex_ai_service_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}" : "projects/${var.networking_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}"}"
+    image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
+    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].name}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].name}"
     # Force submitting a new job on every apply:
     timestamp = timestamp()
   }

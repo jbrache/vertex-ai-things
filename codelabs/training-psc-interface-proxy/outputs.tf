@@ -42,13 +42,13 @@ output "subnet" {
 }
 
 # Network Attachment Outputs - VPC Host Project Network Attachment Mode
-output "network_attachment_standalone" {
+output "network_attachment_networking_project" {
   description = "Network attachment details (VPC Host Project Network Attachment Mode only)"
   value = var.enable_shared_vpc ? null : {
-    name                  = google_compute_network_attachment.psc_attachments[0].name
-    id                    = google_compute_network_attachment.psc_attachments[0].id
-    self_link             = google_compute_network_attachment.psc_attachments[0].self_link
-    connection_preference = google_compute_network_attachment.psc_attachments[0].connection_preference
+    name                  = google_compute_network_attachment.psc_attachment_networking_project[0].name
+    id                    = google_compute_network_attachment.psc_attachment_networking_project[0].id
+    self_link             = google_compute_network_attachment.psc_attachment_networking_project[0].self_link
+    connection_preference = google_compute_network_attachment.psc_attachment_networking_project[0].connection_preference
   }
 }
 
@@ -59,7 +59,7 @@ output "network_attachments_service_projects" {
     for project_id in [var.vertex_ai_service_project_id] :
     project_id => {
       for region in [var.region] :
-      region => google_compute_network_attachment.psc_attachments_service_project[0].self_link
+      region => google_compute_network_attachment.psc_attachment_service_project[0].self_link
     }
   } : null
 }
@@ -71,10 +71,10 @@ output "network_attachments_details" {
     project_id => {
       for region in [var.region] :
       region => {
-        name      = google_compute_network_attachment.psc_attachments_service_project[0].name
-        id        = google_compute_network_attachment.psc_attachments_service_project[0].id
-        self_link = google_compute_network_attachment.psc_attachments_service_project[0].self_link
-        project   = google_compute_network_attachment.psc_attachments_service_project[0].project
+        name      = google_compute_network_attachment.psc_attachment_service_project[0].name
+        id        = google_compute_network_attachment.psc_attachment_service_project[0].id
+        self_link = google_compute_network_attachment.psc_attachment_service_project[0].self_link
+        project   = google_compute_network_attachment.psc_attachment_service_project[0].project
       }
     }
   } : null
@@ -134,6 +134,17 @@ output "shared_vpc_service_project" {
   value       = var.vertex_ai_service_project_id
 }
 
+# API Enablement Outputs
+output "enabled_apis_networking_project" {
+  description = "List of APIs enabled in the networking project"
+  value       = [for api in google_project_service.networking_apis : api.service]
+}
+
+output "enabled_apis_service_project" {
+  description = "List of APIs enabled in the Vertex AI service project"
+  value       = [for api in google_project_service.service_apis : api.service]
+}
+
 # Artifact Registry and Container Build Outputs
 output "artifact_registry_repository" {
   description = "Artifact Registry repository details"
@@ -181,7 +192,7 @@ output "vertex_ai_usage_instructions" {
     "When creating Vertex AI resources, use the network attachment from the same project and region.",
     "",
     "Network Attachment Self-Link:",
-    "  - ${var.region}: ${google_compute_network_attachment.psc_attachments_service_project[0].self_link}",
+    "  - ${var.region}: ${google_compute_network_attachment.psc_attachment_service_project[0].self_link}",
     "",
     "Example for creating a custom training job:",
     "gcloud ai custom-jobs create \\",
@@ -214,7 +225,7 @@ output "vertex_ai_usage_instructions" {
     "- Region: ${var.region}",
     "",
     "Network Attachment Self-Link:",
-    google_compute_network_attachment.psc_attachments[0].self_link,
+    google_compute_network_attachment.psc_attachment_networking_project[0].self_link,
     "",
     "========================================",
     "Usage Instructions (VPC Host Project Network Attachment Mode)",
