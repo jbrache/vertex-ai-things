@@ -85,10 +85,8 @@ locals {
 # ============================================
 resource "google_project_service" "networking_apis" {
   for_each = toset(local.networking_apis)
-  
   project = var.networking_project_id
   service = each.value
-
   disable_on_destroy = false
 }
 
@@ -97,10 +95,8 @@ resource "google_project_service" "networking_apis" {
 # ============================================
 resource "google_project_service" "service_apis" {
   for_each = toset(local.service_apis)
-  
   project = var.vertex_ai_service_project_id
   service = each.value
-
   disable_on_destroy = false
 }
 
@@ -113,7 +109,6 @@ resource "google_storage_bucket" "vertex_ai_bucket" {
   location                    = var.region
   force_destroy               = true
   uniform_bucket_level_access = true
-
   depends_on = [google_project_service.service_apis["storage.googleapis.com"]]
 }
 
@@ -159,6 +154,16 @@ resource "google_project_service_identity" "service_compute_sa" {
   depends_on = [google_project_service.service_apis["compute.googleapis.com"]]
 }
 
+# Wait for Service Identity Creation
+resource "time_sleep" "wait_for_service_identity_creation" {
+  depends_on = [
+    google_project_service_identity.networking_aiplatform_sa,
+    google_project_service_identity.service_aiplatform_sa,
+    google_project_service_identity.service_compute_sa
+  ]
+  create_duration = "5s"
+}
+
 # ============================================
 # Step 1: Grant compute.networkUser role to service project Vertex AI service agents on the host project
 # ============================================
@@ -169,6 +174,7 @@ resource "google_project_iam_member" "service_vertex_ai_network_user_host" {
   project = var.networking_project_id
   role    = "roles/compute.networkUser"
   member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -180,7 +186,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mo
   project = var.networking_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.networking_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-  depends_on = [google_project_service_identity.networking_aiplatform_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # In Service Project Network Attachment Mode, grant the role to the service project's own service agent.
@@ -189,7 +195,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_service
   project = var.vertex_ai_service_project_id
   role    = "roles/compute.networkAdmin"
   member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-  depends_on = [google_project_service_identity.service_aiplatform_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -203,6 +209,7 @@ resource "google_compute_subnetwork_iam_member" "vertex_ai_network_user" {
   subnetwork = google_compute_subnetwork.intf_subnet.name
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -212,7 +219,7 @@ resource "google_project_iam_member" "service_dns_peer" {
   project = var.networking_project_id
   role    = "roles/dns.peer"
   member  = "serviceAccount:service-${data.google_project.vertex_ai_service_project.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
-  depends_on = [google_project_service_identity.service_aiplatform_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -222,7 +229,7 @@ resource "google_project_iam_member" "compute_engine_aiplatform_user" {
   project = var.vertex_ai_service_project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [google_project_service_identity.service_compute_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -232,7 +239,7 @@ resource "google_project_iam_member" "compute_engine_storage_admin" {
   project = var.vertex_ai_service_project_id
   role    = "roles/storage.admin"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [google_project_service_identity.service_compute_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -243,7 +250,7 @@ resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
   project = var.vertex_ai_service_project_id
   role    = "roles/cloudbuild.builds.builder"
   member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
-  depends_on = [google_project_service_identity.service_compute_sa]
+  depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
 # ============================================
@@ -251,7 +258,15 @@ resource "google_project_iam_member" "compute_engine_cloudbuild_builder" {
 # ============================================
 resource "time_sleep" "wait_for_iam_propagation" {
   count = var.create_vertex_test_container ? 1 : 0
-  depends_on = [google_project_iam_member.compute_engine_cloudbuild_builder]
+  depends_on = [
+    google_project_iam_member.service_vertex_ai_network_user_host,
+    google_project_iam_member.networking_vertex_ai_network_admin_host_mode,
+    google_project_iam_member.networking_vertex_ai_network_admin_service_mode,
+    google_project_iam_member.service_dns_peer,
+    google_project_iam_member.compute_engine_aiplatform_user,
+    google_project_iam_member.compute_engine_storage_admin,
+    google_project_iam_member.compute_engine_cloudbuild_builder
+  ]
   create_duration = "30s"
 }
 
