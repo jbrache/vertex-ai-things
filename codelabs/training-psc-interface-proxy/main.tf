@@ -652,7 +652,7 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
     image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
-    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].name}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].name}"
+    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].id}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].id}"
     # Force submitting a new job on every apply:
     timestamp = timestamp()
   }
@@ -766,7 +766,7 @@ resource "null_resource" "submit_pipeline_dns_peering" {
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
     image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
-    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].name}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].name}"
+    network_attachment = var.enable_shared_vpc ? "${google_compute_network_attachment.psc_attachment_service_project[0].id}" : "${google_compute_network_attachment.psc_attachment_networking_project[0].id}"
     # Force submitting a new job on every apply:
     timestamp = timestamp()
   }
