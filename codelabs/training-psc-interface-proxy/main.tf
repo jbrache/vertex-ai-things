@@ -417,7 +417,7 @@ resource "google_project_iam_member" "networking_vertex_ai_network_admin_host_mo
   ]
 }
 
-# In Service Project Network Attachment Mode, grant the role to each service project's own service agent.
+# In Service Project Network Attachment Mode, grant the role to the service project's own service agent.
 resource "google_project_iam_member" "networking_vertex_ai_network_admin_service_mode" {
   count   = var.enable_shared_vpc ? 1 : 0
   project = var.vertex_ai_service_project_id
@@ -700,7 +700,7 @@ resource "google_dns_record_set" "class_e_vm_record" {
 }
 
 # ============================================
-# Step 9: Create a Vertex AI Custom Job in each service project using the REST API
+# Step 9: Create a Vertex AI Custom Job in the service project using the REST API
 # ============================================
 # Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
