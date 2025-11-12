@@ -135,22 +135,6 @@ resource "google_project_organization_policy" "ip_forward" {
   }
 }
 
-# Wait 5 minutes after enabling Vertex AI API in networking project
-# This allows time for the service agents to be properly provisioned
-# resource "time_sleep" "wait_for_networking_aiplatform_api" {
-#   depends_on = [google_project_service.networking_aiplatform_api]
-
-  # create_duration = "300s"  # 5 minutes
-# }
-
-# Wait 5 minutes after enabling Vertex AI API in service projects
-# This allows time for the service agents to be properly provisioned
-# resource "time_sleep" "wait_for_service_aiplatform_api" {
-#   depends_on = [google_project_service.service_aiplatform_api]
-
-  # create_duration = "300s"  # 5 minutes
-# }
-
 # ============================================
 # Generate service identity for services (IAM)
 # ============================================
