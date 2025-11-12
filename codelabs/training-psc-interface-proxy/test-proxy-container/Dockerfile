@@ -8,6 +8,10 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -y net-tools tcpdump dnsutils
 
+# Additional from the codelab
+RUN apt-get update && \
+    apt-get install inetutils-traceroute inetutils-ping netcat-openbsd curl -y
+
 RUN pip install cloudml-hypertune requests kfp
 
 # Copies the trainer code to the docker image.

@@ -112,6 +112,21 @@ resource "google_project_service" "service_cloudbuild_api" {
 }
 
 # ============================================
+# Create Storage Bucket in the Vertex AI service project
+# ============================================
+resource "google_storage_bucket" "vertex_ai_bucket" {
+  name                        = "${var.vertex_ai_service_project_id}-aiplatform"
+  project                     = var.vertex_ai_service_project_id
+  location                    = var.region
+  force_destroy               = true
+  uniform_bucket_level_access = true
+
+  depends_on = [
+    google_project_service.service_aiplatform_api
+  ]
+}
+
+# ============================================
 # Configure Organization Policy for IP Forwarding of Proxy VM
 # ============================================
 resource "google_project_organization_policy" "ip_forward" {
@@ -446,6 +461,24 @@ resource "google_project_iam_member" "service_dns_peer" {
 }
 
 # ============================================
+# Step 5.4: Grant aiplatform.user role to the default compute engine service account
+# ============================================
+resource "google_project_iam_member" "compute_engine_aiplatform_user" {
+  project = var.vertex_ai_service_project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
+}
+
+# ============================================
+# Step 5.5: Grant storage.admin role to the default compute engine service account
+# ============================================
+resource "google_project_iam_member" "compute_engine_storage_admin" {
+  project = var.vertex_ai_service_project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com"
+}
+
+# ============================================
 # Step 6: Create firewall rule that allows SSH access from IAP
 # ============================================
 resource "google_compute_firewall" "allow_ssh_iap" {
@@ -673,7 +706,7 @@ resource "google_dns_record_set" "class_e_vm_record" {
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
 # Vertex AI → Training → Custom jobs
 # https://console.cloud.google.com/vertex-ai/training/custom-jobs
-resource "null_resource" "submit_training_job" {
+resource "null_resource" "submit_training_job_psci_nonrfc" {
   count = var.create_training_job ? 1 : 0
 
   triggers = {
@@ -686,9 +719,9 @@ resource "null_resource" "submit_training_job" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      cat <<EOF > request.json
+      cat <<EOF > request-psci-nonrfc-test.json
       {
-        "display_name": "Test-PSC-I-nonRFC-${formatdate("YYYYMMDDhhmmss", timestamp())}",
+        "display_name": "Test-PSC-I-nonRFC-${formatdate("YYYY-MM-DD-hh:mm:ss", timestamp())}",
         "job_spec": {
           "worker_pool_specs": [
             {
@@ -701,18 +734,20 @@ resource "null_resource" "submit_training_job" {
                 "args": [
                   "--sleep=600s"
                 ],
-                "env": [{
-                  "name": "NONRFC_URL",
-                  "value": "http://class-e-vm.${trimsuffix(var.dns_domain, ".")}"
-                },
-                {
-                  "name": "PROXY_VM_IP",
-                  "value": "proxy-vm.${trimsuffix(var.dns_domain, ".")}"
-                },
-                {
-                  "name": "PROXY_VM_PORT",
-                  "value": "8888"
-                }]
+                "env": [
+                  {
+                    "name": "NONRFC_URL",
+                    "value": "http://class-e-vm.${trimsuffix(var.dns_domain, ".")}"
+                  },
+                  {
+                    "name": "PROXY_VM_IP",
+                    "value": "proxy-vm.${trimsuffix(var.dns_domain, ".")}"
+                  },
+                  {
+                    "name": "PROXY_VM_PORT",
+                    "value": "8888"
+                  }
+                ]
               },
               "disk_spec": {
                 "boot_disk_type": "pd-ssd",
@@ -736,7 +771,7 @@ resource "null_resource" "submit_training_job" {
       curl -X POST \
            -H "Authorization: Bearer $(gcloud auth print-access-token)" \
            -H "Content-Type: application/json; charset=utf-8" \
-           -d @request.json \
+           -d @request-psci-nonrfc-test.json \
            "https://${var.region}-aiplatform.googleapis.com/v1/projects/${var.vertex_ai_service_project_id}/locations/${var.region}/customJobs"
     EOT
   }
@@ -748,3 +783,98 @@ resource "null_resource" "submit_training_job" {
   ]
 }
 
+# ============================================
+# Step 10: Create a Vertex AI Pipeline Job the service project using the REST API
+# ============================================
+# Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
+# Its status can be monitored by navigating to the following in the Google Cloud Console:
+# Vertex AI → Training → Custom jobs
+# https://console.cloud.google.com/vertex-ai/training/custom-jobs
+
+# REST API
+# https://cloud.google.com/vertex-ai/docs/reference/rest/v1/projects.locations.pipelineJobs#PipelineJob
+
+# PSC-I in Pipelines
+# https://docs.cloud.google.com/vertex-ai/docs/pipelines/configure-private-service-connect
+
+locals {
+  pipeline_decoded_yaml = yamldecode(file("${path.module}/pipeline-compiled/dns_peering_test_pipeline.yaml"))
+
+  # Helper to access the specific executor path easily
+  # Note: Using ["key"] syntax is safer for keys with hyphens
+  target_executor = local.pipeline_decoded_yaml.deploymentSpec.executors["exec-dns-peering-test-op"]
+
+  updated_pipeline_spec = merge(local.pipeline_decoded_yaml, {
+    defaultPipelineRoot = "${google_storage_bucket.vertex_ai_bucket.url}/pipeline_root/intro"
+    
+    # LEVEL 1: Merge into existing deploymentSpec to preserve its sibling fields
+    deploymentSpec = merge(local.pipeline_decoded_yaml.deploymentSpec, {
+      
+      # LEVEL 2: Merge into existing executors to preserve other executors
+      executors = merge(local.pipeline_decoded_yaml.deploymentSpec.executors, {
+        
+        # LEVEL 3: Merge into the specific executor to preserve its other fields (e.g. args, command)
+        "exec-dns-peering-test-op" = merge(local.target_executor, {
+          
+          # LEVEL 4: Merge into the container to update only the image
+          container = merge(local.target_executor.container, {
+            image = "${var.artifact_registry_location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${var.artifact_registry_repository_id}/${var.image_name}:latest"
+          })
+        })
+      })
+    })
+  })
+
+  pipeline_json_output = jsonencode(local.updated_pipeline_spec)
+}
+
+resource "null_resource" "submit_pipeline_dns_peering" {
+  count = var.create_training_job ? 1 : 0
+
+  triggers = {
+    # This ensures the job is re-created if the image or network attachment changes
+    image_uri          = var.create_vertex_test_container ? "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest" : ""
+    network_attachment = "${var.enable_shared_vpc ? "projects/${var.vertex_ai_service_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}" : "projects/${var.networking_project_id}/regions/${var.region}/networkAttachments/${var.region}-${var.network_attachment_name_postfix}"}"
+    # Force submitting a new job on every apply:
+    timestamp = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      cat <<EOF > request-pipeline-test.json
+      {
+        "display_name": "dns-peering-test-pipeline",
+        "pipeline_spec": ${local.pipeline_json_output},
+        "runtime_config": {
+          "gcs_output_directory": "${google_storage_bucket.vertex_ai_bucket.url}",
+          "parameterValues": {
+            "dns_domain": "class-e-vm.${trimsuffix(var.dns_domain, ".")}",
+            "proxy_vm_ip": "proxy-vm.${trimsuffix(var.dns_domain, ".")}",
+            "proxy_vm_port": "8888"
+          }
+        },
+        "service_account": "${data.google_project.vertex_ai_service_project.number}-compute@developer.gserviceaccount.com",
+        "psc_interface_config": {
+          "network_attachment": "${self.triggers.network_attachment}"
+          ${var.create_dns_zone ? ",\"dns_peering_configs\": [{\"domain\": \"${var.dns_domain}\",\"target_project\": \"${var.networking_project_id}\",\"target_network\": \"${google_compute_network.vpc_network.name}\"}]" : ""}
+        },
+        "labels": {
+          "network_type": "psc-i"
+        }
+      }
+      EOF
+
+      curl -X POST \
+           -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+           -H "Content-Type: application/json; charset=utf-8" \
+           -d @request-pipeline-test.json \
+           "https://${var.region}-aiplatform.googleapis.com/v1/projects/${var.vertex_ai_service_project_id}/locations/${var.region}/pipelineJobs?pipelineJobId=dns-peering-test-pipeline-${formatdate("YYYY-MM-DD-hh-mm-ss", timestamp())}"
+    EOT
+  }
+
+  depends_on = [
+    null_resource.build_vertex_training_container,
+    google_project_iam_member.networking_vertex_ai_network_admin_host_mode,
+    google_project_iam_member.networking_vertex_ai_network_admin_service_mode
+  ]
+}
