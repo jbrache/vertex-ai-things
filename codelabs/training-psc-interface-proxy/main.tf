@@ -314,9 +314,7 @@ resource "null_resource" "build_vertex_training_container" {
     EOT
   }
 
-  depends_on = [
-    google_artifact_registry_repository.vertex_training_repositories
-  ]
+  depends_on = [google_artifact_registry_repository.vertex_training_repositories]
 }
 
 # ============================================
@@ -327,7 +325,6 @@ resource "google_compute_network" "vpc_network" {
   auto_create_subnetworks = false
   project                 = var.networking_project_id
   description             = "VPC network for Private Service Connect Interface to Vertex AI"
-
   depends_on = [time_sleep.wait_for_project_apis]
 }
 
@@ -755,30 +752,13 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
 # https://docs.cloud.google.com/vertex-ai/docs/pipelines/configure-private-service-connect
 
 locals {
-  pipeline_decoded_yaml = yamldecode(file("${path.module}/pipeline-compiled/dns_peering_test_pipeline.yaml"))
-
-  # Helper to access the specific executor path easily
-  # Note: Using ["key"] syntax is safer for keys with hyphens
-  target_executor = local.pipeline_decoded_yaml.deploymentSpec.executors["exec-dns-peering-test-op"]
-
-  updated_pipeline_spec = merge(local.pipeline_decoded_yaml, {
-    defaultPipelineRoot = "${google_storage_bucket.vertex_ai_bucket.url}/pipeline_root/intro"
-    # LEVEL 1: Merge into existing deploymentSpec to preserve its sibling fields
-    deploymentSpec = merge(local.pipeline_decoded_yaml.deploymentSpec, {
-      # LEVEL 2: Merge into existing executors to preserve other executors
-      executors = merge(local.pipeline_decoded_yaml.deploymentSpec.executors, {
-        # LEVEL 3: Merge into the specific executor to preserve its other fields (e.g. args, command)
-        "exec-dns-peering-test-op" = merge(local.target_executor, {
-          # LEVEL 4: Merge into the container to update only the image
-          container = merge(local.target_executor.container, {
-            image = "${var.artifact_registry_location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${var.artifact_registry_repository_id}/${var.image_name}:latest"
-          })
-        })
-      })
-    })
-  })
-
-  pipeline_json_output = jsonencode(local.updated_pipeline_spec)
+  rendered_pipeline_spec = templatefile("${path.module}/pipeline-compiled/dns_peering_test_pipeline.tftpl", {
+      default_pipeline_root = "${google_storage_bucket.vertex_ai_bucket.url}/pipeline_root/intro"
+      image_uri             = "${var.artifact_registry_location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${var.artifact_registry_repository_id}/${var.image_name}:latest"
+    }
+  )
+  pipeline_yaml_output = yamldecode(local.rendered_pipeline_spec)
+  pipeline_json_output = jsonencode(local.pipeline_yaml_output)
 }
 
 resource "null_resource" "submit_pipeline_dns_peering" {

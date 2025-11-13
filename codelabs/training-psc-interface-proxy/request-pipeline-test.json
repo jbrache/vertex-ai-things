@@ -1,0 +1,20 @@
+{
+  "display_name": "dns-peering-test-pipeline",
+  "pipeline_spec": {"components":{"comp-dns-peering-test-op":{"executorLabel":"exec-dns-peering-test-op","inputDefinitions":{"parameters":{"dns_domain":{"parameterType":"STRING"},"proxy_vm_ip":{"parameterType":"STRING"},"proxy_vm_port":{"parameterType":"STRING"}}}}},"defaultPipelineRoot":"gs://codelab-dev-jb0005-aiplatform/pipeline_root/intro","deploymentSpec":{"executors":{"exec-dns-peering-test-op":{"container":{"args":["\n            # These are installed in the container\n            # apt-get update \u0026\u0026 apt-get install inetutils-traceroute inetutils-ping netcat-openbsd curl -y\n\n            echo \"Local IP(s): 172.18.105.236 192.168.9.1 \"\n\n            echo \"Attempting to trace route to {{$.inputs.parameters['dns_domain']}}\"\n            traceroute -w 1 -m 7 \"{{$.inputs.parameters['dns_domain']}}\"\n\n            echo \"Sending curl requests to http://{{$.inputs.parameters['dns_domain']}} via proxy {{$.inputs.parameters['proxy_vm_ip']}}:{{$.inputs.parameters['proxy_vm_port']}} and recording trace...\"\n            if curl -L -v --trace-ascii /dev/stdout -x http://{{$.inputs.parameters['proxy_vm_ip']}}:{{$.inputs.parameters['proxy_vm_port']}} \"http://{{$.inputs.parameters['dns_domain']}}\"; then\n                echo \"Curl request succeeded!\"\n            else\n                echo \"Curl request failed!\"\n                exit 1\n            fi\n            "],"command":["bash","-c"],"image":"us-docker.pkg.dev/codelab-dev-jb0005/pipelines-test-repo-psc/nonrfc-ip-call:latest"}}}},"pipelineInfo":{"description":"Test DNS Peering using env variable","name":"dns-peering-test-pipeline"},"root":{"dag":{"tasks":{"dns-peering-test-op":{"cachingOptions":{},"componentRef":{"name":"comp-dns-peering-test-op"},"inputs":{"parameters":{"dns_domain":{"componentInputParameter":"dns_domain"},"proxy_vm_ip":{"componentInputParameter":"proxy_vm_ip"},"proxy_vm_port":{"componentInputParameter":"proxy_vm_port"}}},"taskInfo":{"name":"dns-peering-test-op"}}}},"inputDefinitions":{"parameters":{"dns_domain":{"parameterType":"STRING"},"proxy_vm_ip":{"parameterType":"STRING"},"proxy_vm_port":{"parameterType":"STRING"}}}},"schemaVersion":"2.1.0","sdkVersion":"kfp-2.14.6"},
+  "runtime_config": {
+    "gcs_output_directory": "gs://codelab-dev-jb0005-aiplatform",
+    "parameterValues": {
+      "dns_domain": "class-e-vm.demo.com",
+      "proxy_vm_ip": "proxy-vm.demo.com",
+      "proxy_vm_port": "8888"
+    }
+  },
+  "service_account": "885530284092-compute@developer.gserviceaccount.com",
+  "psc_interface_config": {
+    "network_attachment": "projects/codelab-dev-jb0005/regions/us-central1/networkAttachments/us-central1-vertex-psci"
+    ,"dns_peering_configs": [{"domain": "demo.com.","target_project": "codelab-dev-jb0005","target_network": "consumer-vpc"}]
+  },
+  "labels": {
+    "network_type": "psc-i"
+  }
+}
