@@ -661,7 +661,7 @@ resource "google_dns_record_set" "class_e_vm_record" {
 # ============================================
 # Step 8: Create a Vertex AI Custom Job in the service project using the REST API
 # ============================================
-# Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
+# Note: Upon the initial run, the Vertex AI Training Custom Job may take up to 15 minutes to start.
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
 # Vertex AI → Training → Custom jobs
 # https://console.cloud.google.com/vertex-ai/training/custom-jobs
@@ -740,7 +740,7 @@ resource "null_resource" "submit_training_job_psci_nonrfc" {
 # ============================================
 # Step 9: Create a Vertex AI Pipeline Job the service project using the REST API
 # ============================================
-# Note: Upon the initial , some attributes will be managed by Vertex AI, the Vertex AI Training Custom Job may take up to 15 minutes to start.
+# Note: Upon the initial run, the Vertex AI Training Custom Job may take up to 15 minutes to start.
 # Its status can be monitored by navigating to the following in the Google Cloud Console:
 # Vertex AI → Training → Custom jobs
 # https://console.cloud.google.com/vertex-ai/training/custom-jobs
