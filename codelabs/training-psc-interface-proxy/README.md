@@ -207,9 +207,9 @@ The highlighted field denotes the IP address used by Vertex AI Pipelines from th
 ![Figure 4](resources/images/figure-4-psc-ip.png)
 
 ## 7. Cloud Logging Validation
-The Vertex AI Pipelines job will take approx 14 minutes to run the first time, subsequent runs are much shorter. To validate a successful outcome perform the following:
+The Vertex AI Pipelines job will take approx 15 minutes to run the first time, subsequent runs are much shorter. To validate a successful outcome perform the following:
 
-Navigate to Vertex AI → Training → Custom jobs
+Navigate to Vertex AI → Training → Custom jobs - [Cloud Console Link](https://console.cloud.google.com/vertex-ai/training/custom-jobs)
 
 Select the executed custom job
 
