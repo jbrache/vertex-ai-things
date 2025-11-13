@@ -18,12 +18,13 @@
 # ============================================
 # REQUIRED: Project and Region Configuration
 # ============================================
-# The networking project (Shared VPC host project) where VPC resources will be created
+# The networking project (VPC host project) where VPC resources will be created
+# Note: `networking_project_id` and `vertex_ai_service_project_id` can be the same project
 # networking_project_id = "YOUR_NETWORKING_PROJECT_ID"
 networking_project_id = "codelab-dev-jb0001"
 
-# Vertex AI service project that will use the Shared VPC
-# Project ID where Vertex AI workloads will run
+# Project ID where Vertex AI workloads will run - Vertex AI service project
+# Note: `networking_project_id` and `vertex_ai_service_project_id` can be the same project
 # vertex_ai_service_project_id = "YOUR_VERTEX_AI_PROJECT_1"
 vertex_ai_service_project_id = "codelab-dev-jb0001"
 

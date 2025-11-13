@@ -136,13 +136,13 @@ output "shared_vpc_service_project" {
 
 # API Enablement Outputs
 output "enabled_apis_networking_project" {
-  description = "List of APIs enabled in the networking project"
-  value       = [for api in google_project_service.networking_apis : api.service]
+  description = "List of APIs enabled in the Networking project"
+  value       = [for api in google_project_service.networking_project_apis : api.service]
 }
 
 output "enabled_apis_service_project" {
   description = "List of APIs enabled in the Vertex AI service project"
-  value       = [for api in google_project_service.service_apis : api.service]
+  value       = [for api in google_project_service.service_project_apis : api.service]
 }
 
 # Artifact Registry and Container Build Outputs

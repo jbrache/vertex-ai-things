@@ -83,21 +83,29 @@ locals {
 # ============================================
 # Enable required APIs in the networking project
 # ============================================
-resource "google_project_service" "networking_apis" {
+# In the networking project
+resource "google_project_service" "networking_project_apis" {
   for_each = toset(local.networking_apis)
   project = var.networking_project_id
   service = each.value
   disable_on_destroy = false
 }
 
-# ============================================
-# Enable required APIs in the Vertex AI service project
-# ============================================
-resource "google_project_service" "service_apis" {
+# In the Vertex AI service project
+resource "google_project_service" "service_project_apis" {
   for_each = toset(local.service_apis)
   project = var.vertex_ai_service_project_id
   service = each.value
   disable_on_destroy = false
+}
+
+# Wait after enabling APIs
+resource "time_sleep" "wait_for_project_apis" {
+  depends_on = [
+    google_project_service.networking_project_apis,
+    google_project_service.service_project_apis
+  ]
+  create_duration = "5s"
 }
 
 # ============================================
@@ -109,7 +117,7 @@ resource "google_storage_bucket" "vertex_ai_bucket" {
   location                    = var.region
   force_destroy               = true
   uniform_bucket_level_access = true
-  depends_on = [google_project_service.service_apis["storage.googleapis.com"]]
+  depends_on = [time_sleep.wait_for_project_apis]
 }
 
 # ============================================
@@ -137,21 +145,21 @@ resource "google_project_service_identity" "networking_aiplatform_identity" {
   provider = google-beta
   project = var.networking_project_id
   service = "aiplatform.googleapis.com"
-  depends_on = [google_project_service.networking_apis]
+  depends_on = [time_sleep.wait_for_project_apis]
 }
 
 resource "google_project_service_identity" "service_aiplatform_identity" {
   provider = google-beta
   project = var.vertex_ai_service_project_id
   service = "aiplatform.googleapis.com"
-  depends_on = [google_project_service.service_apis["aiplatform.googleapis.com"]]
+  depends_on = [time_sleep.wait_for_project_apis]
 }
 
 resource "google_project_service_identity" "service_compute_identity" {
   provider = google-beta
   project = var.vertex_ai_service_project_id
   service = "compute.googleapis.com"
-  depends_on = [google_project_service.service_apis["compute.googleapis.com"]]
+  depends_on = [time_sleep.wait_for_project_apis]
 }
 
 # Wait for Service Identity Creation
@@ -282,7 +290,7 @@ resource "google_artifact_registry_repository" "vertex_training_repositories" {
   description   = var.artifact_registry_description
   format        = var.artifact_registry_format
 
-  depends_on = [google_project_service.service_apis["artifactregistry.googleapis.com"]]
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
 
 # Automatically build and push the container when Terraform is applied
@@ -307,9 +315,7 @@ resource "null_resource" "build_vertex_training_container" {
   }
 
   depends_on = [
-    google_project_service.service_apis["cloudbuild.googleapis.com"],
-    google_artifact_registry_repository.vertex_training_repositories,
-    time_sleep.wait_for_iam_propagation,
+    google_artifact_registry_repository.vertex_training_repositories
   ]
 }
 
@@ -322,7 +328,7 @@ resource "google_compute_network" "vpc_network" {
   project                 = var.networking_project_id
   description             = "VPC network for Private Service Connect Interface to Vertex AI"
 
-  depends_on = [google_project_service.networking_apis["compute.googleapis.com"]]
+  depends_on = [time_sleep.wait_for_project_apis]
 }
 
 # ============================================
@@ -356,10 +362,9 @@ resource "google_compute_subnetwork" "intf_subnet" {
 # ============================================
 # Step 3.2: Enable Shared VPC on the VPC Host project (optional)
 # ============================================
-resource "google_compute_shared_vpc_host_project" "host" {
+resource "google_compute_shared_vpc_host_project" "host_project" {
   count   = var.enable_shared_vpc ? 1 : 0
   project = var.networking_project_id
-
   depends_on = [google_compute_network.vpc_network]
 }
 
@@ -370,8 +375,7 @@ resource "google_compute_shared_vpc_service_project" "service_project" {
   count   = var.enable_shared_vpc ? 1 : 0
   host_project    = var.networking_project_id
   service_project = var.vertex_ai_service_project_id
-
-  depends_on = [google_compute_shared_vpc_host_project.host]
+  depends_on = [google_compute_shared_vpc_host_project.host_project]
 }
 
 # ============================================
@@ -666,7 +670,6 @@ resource "google_dns_record_set" "class_e_vm_record" {
 # https://console.cloud.google.com/vertex-ai/training/custom-jobs
 resource "null_resource" "submit_training_job_psci_nonrfc" {
   count = var.create_training_job ? 1 : 0
-
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
     image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
@@ -780,7 +783,6 @@ locals {
 
 resource "null_resource" "submit_pipeline_dns_peering" {
   count = var.create_training_job ? 1 : 0
-
   triggers = {
     # This ensures the job is re-created if the image or network attachment changes
     image_uri          = "${google_artifact_registry_repository.vertex_training_repositories[0].location}-docker.pkg.dev/${var.vertex_ai_service_project_id}/${google_artifact_registry_repository.vertex_training_repositories[0].repository_id}/${var.image_name}:latest"
