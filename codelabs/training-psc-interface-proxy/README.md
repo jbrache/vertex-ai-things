@@ -49,7 +49,7 @@ Figure 1
 * When your project is part of a VPC Service Controls perimeter, the Google-managed tenants default internet access is blocked by the perimeter to prevent data exfiltration.
 * To allow the deployment  access to the public internet in this scenario, you must explicitly configure a secure egress path that routes traffic through your VPC. The recommended way to achieve this is by setting up a proxy server inside your VPC perimeter with a RFC1918 address and create a Cloud NAT gateway to allow the proxy VM to access the internet.
 
-> [!WARNING]
+> [!NOTE]
 > **Note:** Vertex AI Pipelines deployments require an explicit proxy for Internet Egress when VPC-SC is used. If VPC-SC is not enabled, internet egress is provided through the Google managed tenant vpc.
 
 For additional information, refer to the following resources:
@@ -250,8 +250,8 @@ From class-e-vm observe the HTTP GET and 200 OK
 
 ## 9. Cleanup
 
-> [!WARNING]
-> Note: You can delete the PSC Network Attachment and subnet once the Vertex AI Pipeline has not been used for at least one hour.
+> [!NOTE]
+> **Note:** You can delete the PSC Network Attachment and subnet once the Vertex AI Pipeline has not been used for at least one hour.
 
 **Preferred method**
 ```bash
