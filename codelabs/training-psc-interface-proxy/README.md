@@ -254,11 +254,13 @@ From class-e-vm observe the HTTP GET and 200 OK
 > **Note:** You can delete the PSC Network Attachment and subnet once the Vertex AI Pipeline has not been used for at least one hour.
 
 **Preferred method**
+
 ```bash
 terraform destroy
 ```
 
 **Alternative method**
+
 Alternatively you can use gcloud commands from Cloud Shell to delete tutorial components.
 
 ```
