@@ -180,13 +180,19 @@ gcloud compute ssh --zone us-central1-a "class-e-vm" --tunnel-through-iap --proj
 sudo tcpdump -i any net 10.10.10.0/28 -nn
 ```
 
-## 5. Submit Vertex AI Training and Pipelines Jobs
+## 5. Submit Vertex AI Training and Pipeline Jobs
 The Vertex AI Training and Pipelines Job are configured to be run on a `terraform apply`. To observe communication originating from the PSC Network Attachment subnet, running `terraform apply` will kick off new Vertex AI Training jobs.
 ```bash
 terraform apply
 ```
 
 The jobs perform a wget from Vertex AI Pipelines to the explicit proxy. This allows you to reach non-RFC 1918 VMs, such as the class-e-vm. An explicit proxy is not required for Vertex AI Pipelines to access rfc1918-vm, as its target is an RFC 1918 IP address.
+
+If you would like to learn how to submit Vertex AI Training and Pipelines Jobs via the SDK or REST API refer to the following resources:
+
+* [PSC Interface Vertex AI Job Submission](psc_interface_vertex_ai_job_submission.ipynb)
+* [Create a custom training job with a Private Service Connect interface](https://cloud.google.com/vertex-ai/docs/training/psc-i-egress)
+* [Create a pipeline run with Private Service Connect interfaces](https://cloud.google.com/vertex-ai/docs/pipelines/configure-private-service-connect)
 
 > [!NOTE] 
 > **Note:** Upon the initial run, Vertex AI Pipelines training may take up to 15 minutes to complete after the last cell has been executed. Its status can be monitored by navigating to the following:
