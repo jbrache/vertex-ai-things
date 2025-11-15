@@ -266,7 +266,7 @@ resource "google_project_iam_member" "service_compute_engine_aiplatform_user" {
   for_each = toset(var.vertex_ai_service_project_ids)
   project = each.key
   role    = "roles/aiplatform.user"
-  member  = "serviceAccount:service-${data.google_project.vertex_ai_service_projects[each.key].number}-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:${data.google_project.vertex_ai_service_projects[each.key].number}-compute@developer.gserviceaccount.com"
   depends_on = [time_sleep.wait_for_service_identity_creation]
 }
 
