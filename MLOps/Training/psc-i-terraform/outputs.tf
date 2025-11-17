@@ -176,6 +176,66 @@ output "cloud_build_enabled" {
   value       = var.create_vertex_test_container
 }
 
+# Proxy VM and Network Infrastructure Outputs
+output "proxy_vm" {
+  description = "Proxy VM details (when created)"
+  value = var.create_proxy_vm ? {
+    name         = google_compute_instance.proxy_vm[0].name
+    zone         = google_compute_instance.proxy_vm[0].zone
+    machine_type = google_compute_instance.proxy_vm[0].machine_type
+    internal_ip  = google_compute_instance.proxy_vm[0].network_interface[0].network_ip
+    self_link    = google_compute_instance.proxy_vm[0].self_link
+  } : null
+}
+
+output "cloud_router" {
+  description = "Cloud Router details (when proxy VM is created)"
+  value = var.create_proxy_vm ? {
+    name      = google_compute_router.router[0].name
+    region    = google_compute_router.router[0].region
+    self_link = google_compute_router.router[0].self_link
+  } : null
+}
+
+output "cloud_nat" {
+  description = "Cloud NAT details (when proxy VM is created)"
+  value = var.create_proxy_vm ? {
+    name      = google_compute_router_nat.nat[0].name
+    region    = google_compute_router_nat.nat[0].region
+    router    = google_compute_router_nat.nat[0].router
+  } : null
+}
+
+# DNS Configuration Outputs
+output "dns_zone" {
+  description = "Private DNS zone details (when created)"
+  value = var.create_dns_zone ? {
+    name        = google_dns_managed_zone.private_zone[0].name
+    dns_name    = google_dns_managed_zone.private_zone[0].dns_name
+    description = google_dns_managed_zone.private_zone[0].description
+    name_servers = google_dns_managed_zone.private_zone[0].name_servers
+  } : null
+}
+
+output "dns_proxy_vm_record" {
+  description = "DNS A record for the proxy VM (when created)"
+  value = (var.create_dns_zone && var.create_proxy_vm) ? {
+    name    = google_dns_record_set.proxy_vm_record[0].name
+    type    = google_dns_record_set.proxy_vm_record[0].type
+    ttl     = google_dns_record_set.proxy_vm_record[0].ttl
+    rrdatas = google_dns_record_set.proxy_vm_record[0].rrdatas
+  } : null
+}
+
+# API Services Enabled
+output "enabled_apis" {
+  description = "Map of enabled APIs in networking and service projects"
+  value = {
+    networking_project = local.networking_apis
+    service_projects   = local.service_apis
+  }
+}
+
 # Usage Instructions
 output "vertex_ai_usage_instructions" {
   description = "Instructions for using the network attachments with Vertex AI"

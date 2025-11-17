@@ -53,6 +53,11 @@ network_name = "vertex-vpc-dev"
 subnet_name_postfix = "vertex-psci"
 
 # ============================================
+# Shared VPC Configuration
+# ============================================
+enable_shared_vpc = true
+
+# ============================================
 # Network Attachment Configuration
 # ============================================
 # Postfix for network attachment names - region will be used as prefix (e.g., "us-central1-vertex-psci")
