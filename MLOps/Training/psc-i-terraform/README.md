@@ -48,7 +48,7 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 * To allow the deployment  access to the public internet in this scenario, you must explicitly configure a secure egress path that routes traffic through your VPC. The recommended way to achieve this is by setting up a proxy server inside your VPC perimeter with a RFC1918 address and create a Cloud NAT gateway to allow the proxy VM to access the internet.
 
 > [!NOTE]
-> **Note:** Vertex AI Pipelines deployments require an explicit proxy for Internet Egress when VPC-SC is used. If VPC-SC is not enabled, internet egress is provided through the Google managed tenant vpc.
+> **Note:** Vertex AI Training deployments require an explicit proxy for Internet Egress when VPC-SC is used. If VPC-SC is not enabled, internet egress is provided through the Google managed tenant vpc.
 
 For additional information, refer to the following resources:
 
@@ -117,7 +117,7 @@ If you would like to learn how to submit Vertex AI Training and Pipelines Jobs v
 * [Create a pipeline run with Private Service Connect interfaces](https://cloud.google.com/vertex-ai/docs/pipelines/configure-private-service-connect)
 
 > [!NOTE] 
-> **Note:** Upon the initial run, Vertex AI Pipelines training may take up to 15 minutes to complete after the last cell has been executed. Its status can be monitored by navigating to the following:
+> **Note:** Upon the initial run, Vertex AI Training jobs may take up to 15 minutes to complete after the last cell has been executed. Its status can be monitored by navigating to the following:
 > 
 > Vertex AI → Training → Custom jobs - [Cloud Console Link](https://console.cloud.google.com/vertex-ai/training/custom-jobs)
 
@@ -131,7 +131,7 @@ If you would like to learn how to submit Vertex AI Training and Pipelines Jobs v
 ## Cleanup
 
 > [!NOTE]
-> **Note:** You can delete the PSC Network Attachment and subnet once the Vertex AI Pipeline has not been used for at least one hour.
+> **Note:** You can delete the PSC Network Attachment and subnet once Vertex AI Training has not been used for at least one hour.
 
 **Preferred method**
 
