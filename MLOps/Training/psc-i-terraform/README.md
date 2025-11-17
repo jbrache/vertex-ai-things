@@ -24,13 +24,35 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 2. How a producer can use a network attachment to create a PSC interface
 3. How to establish communication from the producer to the consumer using DNS Peering
 
+> [!WARNING]
+> **Note:** Tutorial offers configuration and validation steps based on the illustrated topology, modify the procedure as needed to meet your organization's requirements.
+
 ## Architectures
 
 ### VPC Host Network Attachment Mode
+-   A single network attachment is created in the networking project.
+-   Use this network attachment for Vertex AI resources in any service project.
+
 ![vpc_host_network_attachment](resources/images/vpc-host-project-network-attachment.png)
 
 ### Service Project Network Attachment Mode
+-   A full Shared VPC architecture is created.
+-   Each service project gets its own network attachment.
+-   When creating Vertex AI resources, use the network attachment from the *same* service project.
+
 ![service_project_network_attachment](resources/images/service-project-network-attachment.png)
+
+### **Vertex AI PSC-Interface VPC-SC considerations**
+
+* When your project is part of a VPC Service Controls perimeter, the Google-managed tenants default internet access is blocked by the perimeter to prevent data exfiltration.
+* To allow the deployment  access to the public internet in this scenario, you must explicitly configure a secure egress path that routes traffic through your VPC. The recommended way to achieve this is by setting up a proxy server inside your VPC perimeter with a RFC1918 address and create a Cloud NAT gateway to allow the proxy VM to access the internet.
+
+> [!NOTE]
+> **Note:** Vertex AI Pipelines deployments require an explicit proxy for Internet Egress when VPC-SC is used. If VPC-SC is not enabled, internet egress is provided through the Google managed tenant vpc.
+
+For additional information, refer to the following resources:
+
+[Set up a Private Service Connect interface for Vertex AI resources | Google Cloud](https://cloud.google.com/vertex-ai/docs/general/vpc-psc-i-setup#set-up-vpc-network)
 
 ## Prerequisites
 
@@ -81,43 +103,23 @@ You'll create a single psc-network-attachment in the consumer VPC leveraging DNS
 | `dns_zone_name` | The name of the Cloud DNS managed zone. | `private-dns-demo` |
 | `dns_domain` | The DNS name of the managed zone (e.g., 'demo.com.'). | `demo.com.` |
 
-## Usage with Vertex AI
-
-This configuration supports two modes depending on the `enable_shared_vpc` variable.
-
-### 1. VPC Host Network Attachment Mode (`enable_shared_vpc = false`)
-
--   A single network attachment is created in the networking project.
--   Use this network attachment for Vertex AI resources in any service project.
+## Submit Vertex AI Training Jobs
+The Vertex AI Training job is configured to be run on a `terraform apply`. Running `terraform apply` will kick off new Vertex AI Training jobs. You can navitate to the custom job in Vertex AI Training to use the [interactive shell](https://docs.cloud.google.com/vertex-ai/docs/training/monitor-debug-interactive-shell) for further investigation from within the job.
 
 ```bash
-NETWORK_ATTACHMENT=$(terraform output -raw network_attachment_self_link)
-
-gcloud ai custom-jobs create \
-  --project=YOUR_SERVICE_PROJECT_ID \
-  --region=us-central1 \
-  --display-name=my-psc-training-job \
-  --network=${NETWORK_ATTACHMENT} \
-  --worker-pool-spec=machine-type=n1-standard-4,replica-count=1,container-image-uri=gcr.io/your-image
+terraform apply
 ```
 
-### 2. Service Project Network Attachment Mode (`enable_shared_vpc = true`)
+If you would like to learn how to submit Vertex AI Training and Pipelines Jobs via the SDK or REST API refer to the following resources:
 
--   A full Shared VPC architecture is created.
--   Each service project gets its own network attachment.
--   When creating Vertex AI resources, use the network attachment from the *same* service project.
+* [PSC Interface Vertex AI Job Submission](https://github.com/jbrache/vertex-ai-things/blob/main/codelabs/training-psc-interface-proxy/psc_interface_vertex_ai_job_submission.ipynb)
+* [Create a custom training job with a Private Service Connect interface](https://cloud.google.com/vertex-ai/docs/training/psc-i-egress)
+* [Create a pipeline run with Private Service Connect interfaces](https://cloud.google.com/vertex-ai/docs/pipelines/configure-private-service-connect)
 
-```bash
-# Get the network attachment for a specific service project
-NETWORK_ATTACHMENT="projects/service-project-1/regions/us-central1/networkAttachments/vertex-ai-psc-attachment"
-
-gcloud ai custom-jobs create \
-  --project=service-project-1 \
-  --region=us-central1 \
-  --display-name=my-psc-training-job \
-  --network=${NETWORK_ATTACHMENT} \
-  --worker-pool-spec=machine-type=n1-standard-4,replica-count=1,container-image-uri=gcr.io/your-image
-```
+> [!NOTE] 
+> **Note:** Upon the initial run, Vertex AI Pipelines training may take up to 15 minutes to complete after the last cell has been executed. Its status can be monitored by navigating to the following:
+> 
+> Vertex AI → Training → Custom jobs - [Cloud Console Link](https://console.cloud.google.com/vertex-ai/training/custom-jobs)
 
 ## Files
 
@@ -127,6 +129,11 @@ gcloud ai custom-jobs create \
 -   **terraform.tfvars**: Your variable values.
 
 ## Cleanup
+
+> [!NOTE]
+> **Note:** You can delete the PSC Network Attachment and subnet once the Vertex AI Pipeline has not been used for at least one hour.
+
+**Preferred method**
 
 ```bash
 terraform destroy
