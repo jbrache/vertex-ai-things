@@ -15,19 +15,19 @@ projects may have issues in an enterprise environment aren't applicable to exter
 1. Enabling the Identity-Aware Proxy API
 2. Granting the Default Compute Engine Service Account Cloud Storage permissions
 3. Deploy the applet from AI Studio
-4. Configure Authentication
+4. Configure Authentication for the applet
 
 Enter your project ID here: <input type="text" id="project-id" name="project-id" placeholder="YOUR_PROJECT_ID" value="YOUR_PROJECT_ID"/>
 
 ## Step 1: Enable the Identity-Aware Proxy API
-Then, open
-[this link](https://console.cloud.google.com/security/iap/getStarted?project=YOUR_PROJECT_ID&supportedpurview=project)
-and enable the Identity-Aware Proxy API.
+Open
+[this link](https://console.cloud.google.com/security/iap/getStarted)
+and enable the Identity-Aware Proxy API, for your specific project ID.
 
 ## Step 2: Configure permissions for Cloud Storage in your project
-From your terminal, run this:
+From your terminal, run this after adjusting your project ID:
 ```bash
-export PROJECT_ID="gen-lang-client-0478523571"
+export PROJECT_ID="YOUR_PROJECT_ID"
 gcloud config set project $PROJECT_ID
 
 gcloud services enable compute.googleapis.com --project=$PROJECT_ID
@@ -69,10 +69,8 @@ share your applet to other users or groups!
 From the terminal, run the command below. Any external env-vars you want, you
 can set in the `--update-env-vars` field following the example pattern below.
 
-<input type="text" id="applet-name" name="applet-name" placeholder="NAME_OF_DEPLOYED_APPLET" value="NAME_OF_DEPLOYED_APPLET"/>
-
 > [!TIP]
-> If you're not sure how to find it, from the same CLI you can see it by
+> If you're not sure how to find the applet, from the same CLI you can see it by
 running `gcloud run services list`.
 
 ```bash
@@ -84,6 +82,6 @@ gcloud beta run deploy $NAME_OF_DEPLOYED_APPLET --image=us-docker.pkg.dev/cloudr
 ## Other Known Issues
 *   Redeploying the app from AI Studio may overwrite some configurations, env_vars *should* be preserved.
 
-## License
+## Disclaimer
 
-Copyright 2025 Google LLC. Licensed under the Apache License, Version 2.0.
+This repository itself is not an officially supported Google product. The code in this repository is for demonstrative purposes only.
