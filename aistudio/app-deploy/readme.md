@@ -86,7 +86,8 @@ gcloud beta run deploy $NAME_OF_DEPLOYED_APPLET --image=us-docker.pkg.dev/cloudr
 ```
 
 ## Other Known Issues
-*   Redeploying the app from AI Studio may overwrite some configurations, env_vars *should* be preserved.
+* Redeploying the app from AI Studio may overwrite some configurations, env_vars *should* be preserved.
+* You may need to inspect errors, to see if there's additional [organization policies](https://docs.cloud.google.com/run/docs/authenticating/public) preventing the Cloud Run deployment from AI Studio.
 
 ## Disclaimer
 
