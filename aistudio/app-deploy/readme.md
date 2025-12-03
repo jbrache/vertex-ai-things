@@ -1,6 +1,6 @@
 > [!NOTE] 
 > TL;DR [Deploying AI Studio Apps](https://ai.google.dev/gemini-api/docs/aistudio-build-mode) to Cloud Run with your account and GCP
-projects may have issues in an enterprise environment aren't applicable to external users. This guide has additional details with IAM/Security steps to aid you in your own environment.
+projects may have issues in an enterprise environment that aren't applicable to external users. This guide has additional details with IAM/Security steps to aid you in your own environment.
 > 
 > There's a different [deployment flow within Vertex AI Studio](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/deploy-vais-prompt), not covered in his document.
 
