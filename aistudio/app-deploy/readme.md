@@ -65,7 +65,7 @@ Click **edit policy**
 
 Add the email addresses of individuals or google groups you want to have access
 to the applet. Ignore the ‘Access Levels dropdown.  
-![4-cloud-run-security.png](images/4-cloud-run-security.png)
+![6-iap-principals.png](images/6-iap-principals.png)
 
 Click **save**. Wait a minute or two for permissions to propagate. You can now
 share your applet to other users or groups!
