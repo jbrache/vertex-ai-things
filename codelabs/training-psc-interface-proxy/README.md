@@ -199,6 +199,13 @@ If you would like to learn how to submit Vertex AI Training and Pipelines Jobs v
 > 
 > Vertex AI → Training → Custom jobs - [Cloud Console Link](https://console.cloud.google.com/vertex-ai/training/custom-jobs)
 
+You can also run this command below to list active/pending jobs:
+```
+export PROJECT_ID="your-project-id"
+
+gcloud ai custom-jobs list --project=$PROJECT_ID --region=us-central1 --filter="(state!="JOB_STATE_SUCCEEDED" AND state!="JOB_STATE_FAILED" AND state!="JOB_STATE_CANCELLED")"
+```
+
 ## 6. PSC Interface Validation
 You can also view the Network Attachment IPs used by Vertax AI Pipelines by navigating to the following:
 
