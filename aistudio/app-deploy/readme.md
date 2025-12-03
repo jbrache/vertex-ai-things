@@ -17,12 +17,18 @@ projects may have issues in an enterprise environment that aren't applicable to 
 3. Deploy the applet from AI Studio
 4. Configure Authentication for the applet
 
-Enter your project ID here: <input type="text" id="project-id" name="project-id" placeholder="YOUR_PROJECT_ID" value="YOUR_PROJECT_ID"/>
-
 ## Step 1: Enable the Identity-Aware Proxy API
 Open
 [this link](https://console.cloud.google.com/security/iap/getStarted)
 and enable the Identity-Aware Proxy API, for your specific project ID.
+
+Alternatively, you can enable it running the following command:
+```bash
+export PROJECT_ID="YOUR_PROJECT_ID"
+gcloud config set project $PROJECT_ID
+
+gcloud services enable iap.googleapis.com --project=$PROJECT_ID
+```
 
 ## Step 2: Configure permissions for Cloud Storage in your project
 From your terminal, run this after adjusting your project ID:
