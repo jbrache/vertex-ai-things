@@ -1,0 +1,11 @@
+[project]
+name = "adk-whoami"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-adk>=1.16.0",
+    "google-auth-oauthlib>=1.2.2",
+    "requests>=2.32.5",
+]
