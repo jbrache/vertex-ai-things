@@ -128,6 +128,19 @@ ENV/
 env.bak/
 venv.bak/
 
+# Client Secrets
+client_secret.json
+
+# Agent Config
+agent_config.json
+
+# AP2 Logs Testing
+.logs
+.log
+
+# UV-generated files and directories
+uv.lock
+
 # Spyder project settings
 .spyderproject
 .spyproject

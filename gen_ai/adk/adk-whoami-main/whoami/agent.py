@@ -1,18 +1,36 @@
+import os
 import sys
 import requests
 
 from google.adk.agents.llm_agent import Agent
 from google.auth.transport.requests import Request
 from google.adk.tools import ToolContext
+from google.adk.tools import BaseTool
+from typing import Any, Dict
 
 AUTH_ID = "whoami_auth"
-USER_INFO_API = "https://www.googleapis.com/oauth2/v2/userinfo"
+# USER_INFO_API = "https://www.googleapis.com/oauth2/v2/userinfo"
+USER_INFO_API = "https://www.googleapis.com/oauth2/v3/userinfo"
+
+def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext):
+    # Print all environment variables
+    print(f"{os.environ}", file=sys.stdout)
+
+    # auth_id is your authorizer ID from Agentspace config (without temp: prefix)
+    access_token = tool_context.state.get(AUTH_ID)
+    if access_token:
+        # Use token for API calls or store for sub-agents
+        tool_context.state["access_token"] = access_token
+    return None
 
 def get_user_info(tool_context: ToolContext):
     """
     Return user's information by leveraging token from ToolContext
     """    
-    context_token = tool_context.state.get(f"temp:{AUTH_ID}",f"no oauth token found.")
+    # No longer works, see: https://github.com/google/adk-python/issues/3274
+    # context_token = tool_context.state.get(f"temp:{AUTH_ID}",f"no oauth token found.")
+
+    context_token = tool_context.state["access_token"]
     # print(context_token)
 
     headers = {'Authorization': f'Bearer {context_token}'}
@@ -33,5 +51,6 @@ root_agent = Agent(
     name='whoami',
     description='Tell user who he/she is.',
     instruction='Use get_user_info tool to retrieve user\'s information, and tell user who he/she is.',
+    before_tool_callback=before_tool_callback,
     tools=[get_user_info]
 )
