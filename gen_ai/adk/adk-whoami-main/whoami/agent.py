@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+import logging
 
 from google.adk.agents.llm_agent import Agent
 from google.auth.transport.requests import Request
@@ -12,9 +13,15 @@ AUTH_ID = "whoami_auth"
 # USER_INFO_API = "https://www.googleapis.com/oauth2/v2/userinfo"
 USER_INFO_API = "https://www.googleapis.com/oauth2/v3/userinfo"
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+)
+
 def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext):
     # Print all environment variables
-    print(f"{os.environ}", file=sys.stdout)
+    # logging.info(f"Printing environment variables: {os.environ}")
+    # print(f"Printing environment variables: {os.environ}", file=sys.stdout)
 
     # auth_id is your authorizer ID from Agentspace config (without temp: prefix)
     access_token = tool_context.state.get(AUTH_ID)
