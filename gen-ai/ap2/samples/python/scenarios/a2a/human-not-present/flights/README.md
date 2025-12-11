@@ -42,7 +42,7 @@ Runs setup and then launches the CLI, letting the CLI manage the merchant agent 
 From the **repo root**:
 
 ```sh
-cd gen_ai/ap2
+cd gen-ai/ap2
 bash samples/python/scenarios/a2a/human-not-present/flights/run.sh
 ```
 
@@ -51,7 +51,7 @@ bash samples/python/scenarios/a2a/human-not-present/flights/run.sh
 Run the CLI directly (if your environment is already set up):
 
 ```sh
-cd gen_ai/ap2
+cd gen-ai/ap2
 python samples/python/scenarios/a2a/human-not-present/flights/run_cli.py
 ```
 
