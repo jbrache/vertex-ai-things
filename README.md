@@ -7,8 +7,8 @@
 ## Table of Contents
 
 - [Codelabs](./codelabs)
-- [Generative AI](./gen_ai)
-- [Machine Learning MLOps](./MLOps)
+- [Generative AI](./gen-ai)
+- [Machine Learning MLOps](./mlops)
 
 ## More Resources Like This Repository
 
