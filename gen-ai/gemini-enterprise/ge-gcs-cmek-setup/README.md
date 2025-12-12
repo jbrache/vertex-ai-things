@@ -111,15 +111,15 @@ echo "Key Resource Name: $KEY_RESOURCE_NAME"
 # 3. Create GCS Bucket and Enable CMEK
 # ==============================================================================
 echo "Creating GCS Bucket: $BUCKET_NAME..."
-gcloud storage buckets create "gs://$BUCKET_NAME" \
+gcloud storage buck ets create "gs://$BUCKET_NAME" \
     --location "$LOCATION" \
     --default-storage-class=STANDARD \
     --uniform-bucket-level-access \
-    --public-access-prevention
-
-echo "Setting default CMEK for GCS Bucket..."
-gcloud storage buckets update "gs://$BUCKET_NAME" \
     --default-encryption-key "$KEY_RESOURCE_NAME"
+
+# echo "Setting default CMEK for GCS Bucket..."
+# gcloud storage buckets update "gs://$BUCKET_NAME" \
+#     --default-encryption-key "$KEY_RESOURCE_NAME"
 
 # ==============================================================================
 # 4. Grant Permissions (IAM)
@@ -152,8 +152,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 # 5. Enable CMEK for Gemini Enterprise (Vertex AI Search)
 # ==============================================================================
 echo "Registering CMEK with Gemini Enterprise (Discovery Engine)..."
-
-API_ENDPOINT="https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/cmekConfigs/default_cmek_config?set_default=true"
+CMEK_CONFIG_ID="default_cmek_config"
+API_ENDPOINT="https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/cmekConfigs/$CMEK_CONFIG_ID?set_default=true"
 
 curl -X PATCH \
     -H "Authorization: Bearer $(gcloud auth print-access-token)" \
@@ -163,6 +163,11 @@ curl -X PATCH \
     "$API_ENDPOINT"
 
 echo -e "\nSetup Complete. New Data Stores in $LOCATION will now use your CMEK."
+
+# View Cloud KMS keys
+curl -X GET \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+"https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/cmekConfigs/$CMEK_CONFIG_ID"
 
 # ==============================================================================
 # 6. Create GCS Data Store
