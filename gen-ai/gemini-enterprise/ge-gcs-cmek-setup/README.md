@@ -156,6 +156,69 @@ curl -X PATCH \
     "$API_ENDPOINT"
 
 echo -e "\nSetup Complete. New Data Stores in $LOCATION will now use your CMEK."
+
+# ==============================================================================
+# 6. Create GCS Data Store
+# ==============================================================================
+export COLLECTION_ID="gcs-cmek-datastore-api"
+export COLLECTION_DISPLAY_NAME="gcs-cmek-datastore-api"
+
+# _gcs_store gets automatically appended
+export DATA_STORE_ID="gcs-cmek-datastore-api_gcs_store"
+export DATA_STORE_DISPLAY_NAME="gcs-cmek-datastore-api"
+
+# Create Collection v2
+curl -X POST \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+-H "X-Goog-User-Project: $PROJECT_ID" \
+"https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION:setUpDataConnectorV2?collectionId=$COLLECTION_ID&collectionDisplayName=$COLLECTION_DISPLAY_NAME" \
+-d "{
+  \"dataSource\": \"gcs\",
+  \"refreshInterval\": \"86400s\",
+  \"entities\": [
+    {
+      \"entityName\": \"gcs_store\",
+      \"params\": {
+        \"content_config\": \"content_required\",
+        \"auto_generate_ids\": true,
+        \"industry_vertical\": \"generic\",
+      }
+    }
+  ],
+  \"params\": {
+    \"instance_uris\": [\"gs://$BUCKET_NAME/**\"]
+  },
+  \"kmsKeyName\": \"$KEY_RESOURCE_NAME\"
+}"
+
+# Import docs
+curl -X POST \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+-H "X-Goog-User-Project: $PROJECT_ID" \
+"https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/collections/default_collection/dataStores/$DATA_STORE_ID/branches/0/documents:import" \
+-d "{
+  \"gcsSource\": {
+    \"inputUris\": [\"gs://$BUCKET_NAME/*\"],
+    \"dataSchema\": \"content\"
+  },
+  \"reconciliationMode\": \"FULL\",
+}"
+
+# Verify that a data store is protected by a key
+curl -X GET \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+-H "x-goog-user-project: $PROJECT_ID" \
+"https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/collections/default_collection/dataStores/$DATA_STORE_ID"
+
+# List All Datastores
+curl -X GET \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+-H "x-goog-user-project: $PROJECT_ID" \
+"https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/collections/default_collection/dataStores"
 ```
 
 ## Important Notes
