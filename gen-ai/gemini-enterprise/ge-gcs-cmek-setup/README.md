@@ -155,6 +155,7 @@ echo "Registering CMEK with Gemini Enterprise (Discovery Engine)..."
 CMEK_CONFIG_ID="default_cmek_config"
 API_ENDPOINT="https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/cmekConfigs/$CMEK_CONFIG_ID?set_default=true"
 
+# set your CmekConfig to default and then wait 15min and create a new Engine
 curl -X PATCH \
     -H "Authorization: Bearer $(gcloud auth print-access-token)" \
     -H "Content-Type: application/json" \
