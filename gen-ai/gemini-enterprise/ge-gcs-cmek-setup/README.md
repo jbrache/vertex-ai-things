@@ -243,3 +243,11 @@ curl -X GET \
 ## References
 * [Vertex AI Search: Customer-managed encryption keys (CMEK)](https://docs.cloud.google.com/gemini/enterprise/docs/cmek)
 * [Cloud Storage: Using Customer-Managed Encryption Keys](https://www.google.com/search?q=https://cloud.google.com/storage/docs/encryption/using-customer-managed-keys)
+
+## License
+
+Copyright 2025 Google LLC. Licensed under the Apache License, Version 2.0.
+
+## Disclaimer
+
+This repository itself is not an officially supported Google product. The code in this repository is for demonstrative purposes only.
