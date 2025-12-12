@@ -95,7 +95,8 @@ if ! gcloud kms keys describe "$KEY_NAME" --keyring "$KEY_RING_NAME" --location 
         --keyring "$KEY_RING_NAME" \
         --location "$LOCATION" \
         --purpose "encryption" \
-        --rotation-period "never"
+        --rotation-period "30d" \
+        --next-rotation-time "2026-01-01T00:00:00"
 else
     echo "Key $KEY_NAME already exists."
 fi
@@ -107,7 +108,11 @@ echo "Key Resource Name: $KEY_RESOURCE_NAME"
 # 3. Create GCS Bucket and Enable CMEK
 # ==============================================================================
 echo "Creating GCS Bucket: $BUCKET_NAME..."
-gcloud storage buckets create "gs://$BUCKET_NAME" --location "$LOCATION"
+gcloud storage buckets create "gs://$BUCKET_NAME" \
+    --location "$LOCATION" \
+    --default-storage-class=STANDARD \
+    --uniform-bucket-level-access \
+    --public-access-prevention
 
 echo "Setting default CMEK for GCS Bucket..."
 gcloud storage buckets update "gs://$BUCKET_NAME" \
