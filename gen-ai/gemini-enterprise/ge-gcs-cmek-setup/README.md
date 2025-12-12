@@ -94,12 +94,15 @@ if ! gcloud kms keys describe "$KEY_NAME" --keyring "$KEY_RING_NAME" --location 
     gcloud kms keys create "$KEY_NAME" \
         --keyring "$KEY_RING_NAME" \
         --location "$LOCATION" \
-        --purpose "encryption" \
-        --rotation-period "30d" \
-        --next-rotation-time "2026-01-01T00:00:00"
+        --purpose "encryption"
 else
     echo "Key $KEY_NAME already exists."
 fi
+
+# Not setting key rotation above due to docs
+# https://docs.cloud.google.com/gemini/enterprise/docs/cmek
+        # --rotation-period "30d" \
+        # --next-rotation-time "2026-01-01T00:00:00"
 
 KEY_RESOURCE_NAME="projects/$PROJECT_ID/locations/$LOCATION/keyRings/$KEY_RING_NAME/cryptoKeys/$KEY_NAME"
 echo "Key Resource Name: $KEY_RESOURCE_NAME"
@@ -140,6 +143,10 @@ gcloud kms keys add-iam-policy-binding "$KEY_NAME" \
     --location "$LOCATION" \
     --member "serviceAccount:$DISCOVERY_ENGINE_SERVICE_AGENT" \
     --role "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$DISCOVERY_ENGINE_SERVICE_AGENT" \
+    --role="roles/storage.objectViewer"
 
 # ==============================================================================
 # 5. Enable CMEK for Gemini Enterprise (Vertex AI Search)
