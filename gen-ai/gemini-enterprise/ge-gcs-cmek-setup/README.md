@@ -172,12 +172,12 @@ curl -X GET \
 # ==============================================================================
 # 6. Create GCS Data Store
 # ==============================================================================
-export COLLECTION_ID="gcs-cmek-datastore-api"
-export COLLECTION_DISPLAY_NAME="gcs-cmek-datastore-api"
+COLLECTION_ID="gcs-cmek-datastore-api"
+COLLECTION_DISPLAY_NAME="gcs-cmek-datastore-api"
 
 # _gcs_store gets automatically appended
-export DATA_STORE_ID="gcs-cmek-datastore-api_gcs_store"
-export DATA_STORE_DISPLAY_NAME="gcs-cmek-datastore-api"
+DATA_STORE_ID="gcs-cmek-datastore-api_gcs_store"
+DATA_STORE_DISPLAY_NAME="gcs-cmek-datastore-api"
 
 # Create Collection v2
 curl -X POST \
