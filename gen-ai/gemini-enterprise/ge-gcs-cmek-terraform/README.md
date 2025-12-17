@@ -4,12 +4,20 @@ This guide automates Customer-Managed Encryption Keys (CMEK) setup for **Gemini 
 
 ## What This Does
 
-1. Enables required Google Cloud APIs
+1. Enables required Google Cloud APIs 
+    * `cloudkms.googleapis.com`
+    * `storage.googleapis.com`
+    * `discoveryengine.googleapis.com`
+    * `cloudresourcemanager.googleapis.com`
 2. Creates Cloud KMS Key Ring and Key in Multi-Region (`us` or `eu`)
 3. Creates GCS Bucket with CMEK encryption
 4. Grants IAM permissions to service agents
+    * `roles/cloudkms.cryptoKeyEncrypterDecrypter`
+    * `roles/storage.objectViewer`
+    * `roles/storage.admin` (Optional)
 5. Registers KMS key with Discovery Engine for new Data Stores
 6. Optionally creates Discovery Engine Data Store and imports documents
+7. Optionally creates Gemini Enterprise Engine
 
 ## Prerequisites
 
@@ -72,7 +80,7 @@ terraform output next_steps   # Deployment guide
 
 ### ⏱️ CMEK Registration Wait Time
 
-**Wait 20 minutes** after CMEK registration before creating Data Stores. The configuration includes a 15-minute wait (`900s`) by default. If you encounter `INITIALIZING` errors, the CMEK config hasn't propagated yet so retry with a `terraform apply`.
+**Wait 20 minutes** after CMEK registration before creating Data Stores. The configuration includes a 20-minute wait (`1200s`) by default. If you encounter `INITIALIZING` errors, the CMEK config hasn't propagated yet so retry with a `terraform apply`.
 ```bash
 The location-level TP for `projects/123456789012/locations/us` is not READY; current state is INITIALIZING."
 ```
@@ -90,9 +98,27 @@ To enable rotation, edit `main.tf`:
 rotation_period = "7776000s"  # 90 days
 ```
 
-### 📄 Document Import
+### 🔄 Data Connector Synchronization/Import
 
 When `create_data_store = true`, documents from the GCS bucket are automatically imported using a `local-exec` provisioner. Monitor the import status in the Discovery Engine console.
+
+**Wait for the data connector to be ready** before triggering manual synchronization. The connector needs time to complete initialization after creation. If you attempt to sync too early, you may encounter:
+
+```json
+{
+  "code": 400,
+  "message": "Manual Sync is not supported while connector is creating. Please try again later."
+  "status": "FAILED_PRECONDITION",
+  "details": [
+    {
+      "@type": "type.googleapis.com/google.rpc.DebugInfo",
+      "detail": "Cannot start manual sync for connector projects/123456789012/locations/us/collections/tf-collection-id/dataConnector because it is in state 1"
+    }
+  ]
+}
+```
+
+The Terraform configuration includes a 5-minute wait after data connector creation, but complex setups may require additional time. If you encounter this error, wait a few minutes and retry the sync operation.
 
 ## Configuration Variables
 
@@ -162,28 +188,28 @@ terraform destroy  # Review carefully before confirming
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Google Cloud Project                     │
+│                     Google Cloud Project                    │
 ├─────────────────────────────────────────────────────────────┤
-│                                                               │
+│                                                             │
 │  ┌──────────────┐         ┌─────────────────────┐           │
 │  │   Cloud KMS  │────────>│   GCS Bucket        │           │
 │  │   Key Ring   │  CMEK   │   (Encrypted)       │           │
 │  │   & Key      │         │                     │           │
 │  └──────────────┘         └─────────────────────┘           │
-│         │                          │                         │
-│         │                          │                         │
-│         └──────────────────────────┴─────────────>           │
-│                                         │                    │
-│                              ┌──────────▼──────────┐         │
-│                              │  Discovery Engine   │         │
-│                              │  Data Store         │         │
-│                              │  (CMEK Encrypted)   │         │
-│                              └─────────────────────┘         │
-│                                         │                    │
-│                              ┌──────────▼──────────┐         │
-│                              │  Search Engine      │         │
-│                              │  (Gemini Enterprise)│         │
-│                              └─────────────────────┘         │
+│         │                          │                        │
+│         │                          │                        │
+│         └──────────────────────────┴─────────────>          │
+│                                         │                   │
+│                              ┌──────────▼──────────┐        │
+│                              │  Discovery Engine   │        │
+│                              │  Data Store         │        │
+│                              │  (CMEK Encrypted)   │        │
+│                              └─────────────────────┘        │
+│                                         │                   │
+│                              ┌──────────▼──────────┐        │
+│                              │  Search Engine      │        │
+│                              │  (Gemini Enterprise)│        │
+│                              └─────────────────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
