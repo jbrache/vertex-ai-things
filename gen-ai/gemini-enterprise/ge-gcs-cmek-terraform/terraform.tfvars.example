@@ -1,0 +1,57 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ==============================================================================
+# Gemini Enterprise CMEK Setup - Terraform Variables
+# ==============================================================================
+# Copy this file to terraform.tfvars and update with your values:
+#   cp terraform.tfvars.example terraform.tfvars
+# ==============================================================================
+
+# Required: Your Google Cloud project ID
+project_id = "your-project-id"
+
+# Required: Globally unique name for the GCS bucket
+bucket_name = "your-gemini-data-bucket"
+
+# Multi-Region location (must be 'us' or 'eu' for Gemini Enterprise CMEK)
+location = "us"
+
+# KMS key ring name
+key_ring_name = "gemini-enterprise-keyring-tf"
+
+# KMS crypto key name
+key_name = "gemini-search-key-tf"
+
+# GCS bucket storage class
+bucket_storage_class = "STANDARD"
+
+# CMEK ID for Discovery Engine CmekConfig Resource
+cmek_config_id = "default_cmek_config"
+
+# Discovery Engine collection configuration
+collection_id           = "tf-collection-id"
+collection_display_name = "tf-collection-id"
+data_store_id           = "tf-datastore-id"
+data_store_display_name = "tf-datastore-id"
+
+# Whether to create the data store
+# Set to true to create it automatically, or false to create it manually later
+create_data_store = false
+
+# Wheather to create the engine
+create_gemini_enterprise_engine = true
+
+# Whether to enable required Google Cloud APIs
+enable_apis = true

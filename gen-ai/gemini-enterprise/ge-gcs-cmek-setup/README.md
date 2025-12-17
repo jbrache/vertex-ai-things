@@ -40,6 +40,10 @@ BUCKET_NAME="your-gemini-data-bucket"
 > **Warning:** Gemini Enterprise CMEK requires **Multi-Region** keys. Set `LOCATION` to `us` or `eu`. Single regions (e.g., `us-central1`) are often not supported for the search index CMEK.
 
 ## Usage
+
+> **💡 Terraform Option Available:** For infrastructure-as-code deployment, see [Terraform README.md](../ge-gcs-cmek-terraform/README.md) for detailed Terraform setup instructions.
+
+### Bash Script Setup
 1. **Save the script** to a file named `setup_gemini_cmek.sh`.
 2. **Make the script executable**:
 ```bash
@@ -234,12 +238,24 @@ curl -X GET \
 "https://$LOCATION-discoveryengine.googleapis.com/v1/projects/$PROJECT_ID/locations/$LOCATION/collections/default_collection/dataStores"
 ```
 
+## Terraform Files
+
+The Terraform configuration includes:
+
+- **`main.tf`** - Main infrastructure configuration including KMS keys, GCS bucket, IAM permissions, and Discovery Engine CMEK registration
+- **`variables.tf`** - Input variable definitions with validation
+- **`outputs.tf`** - Output values including next steps and verification commands
+- **`terraform.tfvars.example`** - Example variable values (copy to `terraform.tfvars`)
+
 ## Important Notes
-1. **New Resources Only:** Registering the CMEK with Discovery Engine (Step 5) only applies to **new** Data Stores created after the script is run. Existing Data Stores cannot be migrated to CMEK.
-2. **Key Rotation:** Vertex AI Search documentation recommends setting the rotation period to "Never" (manual rotation) to avoid indexing interruptions.
-3. **Verification:**
-* **GCS:** Go to the Cloud Storage Console > Configuration tab for your bucket to see the Encryption Key setting.
-* **Gemini:** Create a new Data Store in the console. You should see it automatically associated with your KMS key.
+1. **New Resources Only:** Registering the CMEK with Discovery Engine only applies to **new** Data Stores created after the configuration is applied. Existing Data Stores cannot be migrated to CMEK.
+2. **Key Rotation:** Vertex AI Search documentation recommends setting the rotation period to "Never" (manual rotation) to avoid indexing interruptions. The Terraform configuration follows this recommendation by default.
+3. **Wait Time:** After applying the Terraform configuration, wait **15 minutes** for the CMEK configuration to propagate before creating new Data Stores.
+4. **Data Store Creation:** By default, `create_data_store = false`. You can create the Data Store manually after waiting, or set this to `true` to have Terraform create it (not recommended due to the 15-minute wait time).
+5. **Verification:**
+   * **GCS:** Go to the Cloud Storage Console > Configuration tab for your bucket to see the Encryption Key setting.
+   * **Gemini:** Create a new Data Store in the console. You should see it automatically associated with your KMS key.
+   * **CMEK Config:** Use the API endpoint from `terraform output cmek_config_api_endpoint` to verify the configuration.
 
 ## References
 * [Vertex AI Search: Customer-managed encryption keys (CMEK)](https://docs.cloud.google.com/gemini/enterprise/docs/cmek)
