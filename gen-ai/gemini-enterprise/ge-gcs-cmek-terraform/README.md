@@ -219,6 +219,7 @@ terraform destroy  # Review carefully before confirming
 - [Cloud Storage: Customer-Managed Encryption Keys](https://cloud.google.com/storage/docs/encryption/using-customer-managed-keys)
 - [Cloud KMS Documentation](https://cloud.google.com/kms/docs)
 - [Terraform Google Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
+- [RAG Infrastructure for Generative AI Applications using Google Gemini Enterprise and Vertex AI](https://github.com/yelshater/rag-infrastructure-for-gemini-enterprise/tree/main)
 
 ## License
 
