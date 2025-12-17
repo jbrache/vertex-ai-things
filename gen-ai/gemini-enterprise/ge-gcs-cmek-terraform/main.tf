@@ -332,7 +332,7 @@ resource "null_resource" "import_documents" {
   #       "https://${var.data_store_location}-discoveryengine.googleapis.com/v1/projects/${var.project_id}/locations/${var.data_store_location}/collections/${var.collection_id}/dataStores/${var.collection_id}_gcs_store/branches/0/documents:import" \
   #       -d '{
   #         "gcsSource": {
-  #           "inputUris": ["gs://${google_storage_bucket.gemini_data_bucket.name}/**"],
+  #           "inputUris": ["gs://${google_storage_bucket.gemini_data_bucket.name}/*"],
   #           "dataSchema": "content"
   #         },
   #         "reconciliationMode": "FULL"
