@@ -119,3 +119,8 @@ variable "search_engine_display_name" {
   default     = "tf-test-engine"
 }
 
+variable "grant_ge_sa_storage_admin" {
+  description = "Whether to grant Storage Admin role to the Discovery Engine service account"
+  type        = bool
+  default     = true
+}

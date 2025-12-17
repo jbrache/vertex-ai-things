@@ -76,7 +76,6 @@ create_data_store = false
 Set these environment variables, and application-default credentials first.
 ```bash
 export PROJECT_ID="your-project-id"
-export PROJECT_ID="ge-thunderdome-jb02"
 export GOOGLE_PROJECT=$PROJECT_ID
 export USER_PROJECT_OVERRIDE=true
 export GOOGLE_USE_DEFAULT_CREDENTIALS=true

@@ -55,3 +55,6 @@ create_gemini_enterprise_engine = true
 
 # Whether to enable required Google Cloud APIs
 enable_apis = true
+
+# Grant Disovery Engine SA Storage Admin (for debugging errors)
+grant_ge_sa_storage_admin = true

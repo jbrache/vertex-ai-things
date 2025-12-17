@@ -53,7 +53,7 @@ resource "google_project_service" "required_apis" {
     "cloudkms.googleapis.com",
     "storage.googleapis.com",
     "discoveryengine.googleapis.com",
-    # "cloudresourcemanager.googleapis.com"
+    "cloudresourcemanager.googleapis.com"
   ]) : toset([])
 
   project = var.project_id
@@ -183,10 +183,21 @@ resource "google_project_iam_member" "discovery_engine_storage_viewer" {
 # Grant Discovery Engine Service Agent storage admin permissions 
 # (Only needed for logs created in a new bucket)
 resource "google_project_iam_member" "discovery_engine_storage_admin" {
+  count   = var.grant_ge_sa_storage_admin ? 1 : 0
   project = var.project_id
   role    = "roles/storage.admin"
   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-discoveryengine.iam.gserviceaccount.com"
   depends_on = [time_sleep.wait_for_service_identity_creation]
+}
+
+resource "time_sleep" "wait_for_iam_permissions" {
+  create_duration = "5s"
+
+  depends_on = [
+    google_kms_crypto_key_iam_member.discovery_engine_service_agent,
+    google_project_iam_member.discovery_engine_storage_viewer,
+    google_project_iam_member.discovery_engine_storage_admin
+  ]
 }
 
 # ==============================================================================
@@ -200,13 +211,8 @@ resource "google_project_iam_member" "discovery_engine_storage_admin" {
 # "detail": "[ORIGINAL ERROR] generic::failed_precondition: The location-level TP for `projects/48085522650/locations/us` is not READY; current state is INITIALIZING."
 ###
 resource "time_sleep" "wait_for_cmek_initialization" {
-  create_duration = "30s"
-
-  depends_on = [
-    google_kms_crypto_key_iam_member.discovery_engine_service_agent,
-    google_project_iam_member.discovery_engine_storage_viewer,
-    google_project_service.required_apis,
-  ]
+  create_duration = "900s"
+  depends_on = [time_sleep.wait_for_iam_permissions]
 }
 
 resource "google_discovery_engine_cmek_config" "default" {
@@ -240,7 +246,7 @@ resource "null_resource" "verify_cmek_config" {
     EOT
   }
 
-  depends_on = [google_discovery_engine_cmek_config.default]
+  depends_on = [time_sleep.wait_for_cmek_config_propagation]
 }
 
 # ==============================================================================
@@ -275,19 +281,12 @@ resource "google_discovery_engine_data_connector" "gcs_cmek" {
   kms_key_name = google_kms_crypto_key.gemini_key.id
   connector_modes              = ["DATA_INGESTION"]
   
-  depends_on = [
-    google_discovery_engine_cmek_config.default,
-    google_storage_bucket.gemini_data_bucket,
-    time_sleep.wait_for_cmek_config_propagation
-  ]
+  depends_on = [time_sleep.wait_for_cmek_config_propagation]
 }
 
 resource "time_sleep" "wait_for_data_connector" {
   create_duration = "5s"
-
-  depends_on = [
-    google_discovery_engine_data_connector.gcs_cmek
-  ]
+  depends_on = [google_discovery_engine_data_connector.gcs_cmek]
 }
 
 # Import documents from GCS after data connector is created
@@ -319,9 +318,7 @@ resource "null_resource" "import_documents" {
     EOT
   }
 
-  depends_on = [
-    time_sleep.wait_for_data_connector
-  ]
+  depends_on = [time_sleep.wait_for_data_connector]
 }
 
 # ==============================================================================
@@ -355,7 +352,5 @@ resource "google_discovery_engine_search_engine" "gemini_enterprise_basic" {
   search_engine_config {
   }
 
-  depends_on = [
-    google_discovery_engine_data_connector.gcs_cmek,
-  ]
+  depends_on = [time_sleep.wait_for_data_connector]
 }
