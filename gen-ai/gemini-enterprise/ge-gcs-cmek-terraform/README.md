@@ -100,7 +100,7 @@ rotation_period = "7776000s"  # 90 days
 
 ### 🔄 Data Connector Synchronization/Import
 
-When `create_data_store = true`, documents from the GCS bucket are automatically imported using a `local-exec` provisioner. Monitor the import status in the Discovery Engine console.
+When `create_data_store = true`, documents from the GCS bucket are automatically imported using a `local-exec` provisioner. Monitor the import status in the [Gemini Enterprise console](https://console.cloud.google.com/gemini-enterprise/apps).
 
 **Wait for the data connector to be ready** before triggering manual synchronization. The connector needs time to complete initialization after creation. If you attempt to sync too early, you may encounter:
 
