@@ -268,9 +268,10 @@ resource "google_discovery_engine_data_connector" "gcs_cmek" {
   entities {
     entity_name               = "gcs_store"
     params = jsonencode({
-      "content_config": "content_required"
-      "auto_generate_ids": true
-      "industry_vertical": "generic"
+      "data_schema": "content-with-faq-csv",
+      "content_config": "content_required",
+      "industry_vertical": "industry_vertical_unspecified",
+      "auto_generate_ids": false
     })
   }
   json_params = jsonencode({
@@ -278,45 +279,68 @@ resource "google_discovery_engine_data_connector" "gcs_cmek" {
       "gs://${google_storage_bucket.gemini_data_bucket.name}/**"
     ]
   })
-  kms_key_name = google_kms_crypto_key.gemini_key.id
-  connector_modes              = ["DATA_INGESTION"]
+  kms_key_name                = google_kms_crypto_key.gemini_key.id
+  connector_modes             = ["DATA_INGESTION"]
+  sync_mode                   = "PERIODIC"
   
-  depends_on = [time_sleep.wait_for_cmek_config_propagation]
+  depends_on                  = [time_sleep.wait_for_cmek_config_propagation]
 }
 
 resource "time_sleep" "wait_for_data_connector" {
-  create_duration = "5s"
+  create_duration = "300s"
   depends_on = [google_discovery_engine_data_connector.gcs_cmek]
 }
 
 # Import documents from GCS after data connector is created
 resource "null_resource" "import_documents" {
-  count = var.create_data_store ? 1 : 0
+  count = var.import_documents ? 1 : 0
 
   triggers = {
     data_connector_id = google_discovery_engine_data_connector.gcs_cmek[0].id
     bucket_name       = google_storage_bucket.gemini_data_bucket.name
   }
 
+  # Starts an immediate synchronization process for a DataConnector
+  # Notice the v1alpha API Method
+  # https://docs.cloud.google.com/gemini/enterprise/docs/reference/rest/v1alpha/projects.locations.collections.dataConnector/startConnectorRun
   provisioner "local-exec" {
     command = <<-EOT
-      echo "Importing documents from GCS to Discovery Engine..."
+      echo "Starting an immediate synchronization process for the DataConnector..."
       curl -X POST \
         -H "Authorization: Bearer $(gcloud auth print-access-token)" \
         -H "Content-Type: application/json" \
         -H "X-Goog-User-Project: ${var.project_id}" \
-        "https://${var.data_store_location}-discoveryengine.googleapis.com/v1/projects/${var.project_id}/locations/${var.data_store_location}/collections/${var.collection_id}/dataStores/${var.collection_id}_gcs_store/branches/0/documents:import" \
+        "https://${var.data_store_location}-discoveryengine.googleapis.com/v1alpha/projects/${var.project_id}/locations/${var.data_store_location}/collections/${var.collection_id}/dataConnector:startConnectorRun" \
         -d '{
-          "gcsSource": {
-            "inputUris": ["gs://${google_storage_bucket.gemini_data_bucket.name}/**"],
-            "dataSchema": "content"
-          },
-          "reconciliationMode": "FULL"
+          "entities": ["gcs_store"],
+          "syncIdentity": false
         }'
       echo ""
-      echo "Document import operation initiated. Check Discovery Engine console for status."
+      echo "Synchronization operation initiated. Check Gemini Enterprise console for status."
     EOT
   }
+
+  # This is a manual import method
+  # https://docs.cloud.google.com/gemini/enterprise/docs/connect-cloud-storage
+  # provisioner "local-exec" {
+  #   command = <<-EOT
+  #     echo "Importing documents from GCS to Discovery Engine..."
+  #     curl -X POST \
+  #       -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  #       -H "Content-Type: application/json" \
+  #       -H "X-Goog-User-Project: ${var.project_id}" \
+  #       "https://${var.data_store_location}-discoveryengine.googleapis.com/v1/projects/${var.project_id}/locations/${var.data_store_location}/collections/${var.collection_id}/dataStores/${var.collection_id}_gcs_store/branches/0/documents:import" \
+  #       -d '{
+  #         "gcsSource": {
+  #           "inputUris": ["gs://${google_storage_bucket.gemini_data_bucket.name}/**"],
+  #           "dataSchema": "content"
+  #         },
+  #         "reconciliationMode": "FULL"
+  #       }'
+  #     echo ""
+  #     echo "Document import operation initiated. Check Discovery Engine console for status."
+  #   EOT
+  # }
 
   depends_on = [time_sleep.wait_for_data_connector]
 }

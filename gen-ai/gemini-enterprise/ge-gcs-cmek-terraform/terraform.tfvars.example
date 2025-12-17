@@ -43,12 +43,12 @@ cmek_config_id = "default_cmek_config"
 # Discovery Engine collection configuration
 collection_id           = "tf-collection-id"
 collection_display_name = "tf-collection-id"
-data_store_id           = "tf-datastore-id"
-data_store_display_name = "tf-datastore-id"
 
-# Whether to create the data store
+# Wheather to create the data store
+create_data_store = true
+# Whether to trigger importing documents to the data store
 # Set to true to create it automatically, or false to create it manually later
-create_data_store = false
+import_documents = true
 
 # Wheather to create the engine
 create_gemini_enterprise_engine = true

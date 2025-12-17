@@ -71,6 +71,12 @@ variable "create_data_store" {
   default     = false
 }
 
+variable "import_documents" {
+  description = "Whether to trigger importing documents from GCS after data connector is created"
+  type        = bool
+  default     = false
+}
+
 variable "create_gemini_enterprise_engine" {
   description = "Whether to create the Discovery Engine data store and search engine (set to false if you want to create it manually later)"
   type        = bool
@@ -87,18 +93,6 @@ variable "cmek_config_id" {
   description = "ID for the Discovery Engine CMEK configuration"
   type        = string
   default     = "default_cmek_config"
-}
-
-variable "data_store_id" {
-  description = "ID for the Discovery Engine data store"
-  type        = string
-  default     = "tf-datastore-id"
-}
-
-variable "data_store_display_name" {
-  description = "Display name for the Discovery Engine data store"
-  type        = string
-  default     = "tf-datastore-id"
 }
 
 variable "data_store_location" {
