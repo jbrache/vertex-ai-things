@@ -211,7 +211,7 @@ resource "time_sleep" "wait_for_iam_permissions" {
 # "detail": "[ORIGINAL ERROR] generic::failed_precondition: The location-level TP for `projects/48085522650/locations/us` is not READY; current state is INITIALIZING."
 ###
 resource "time_sleep" "wait_for_cmek_initialization" {
-  create_duration = "900s"
+  create_duration = "1200s"
   depends_on = [time_sleep.wait_for_iam_permissions]
 }
 

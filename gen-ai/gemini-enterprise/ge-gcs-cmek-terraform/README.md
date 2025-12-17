@@ -72,7 +72,10 @@ terraform output next_steps   # Deployment guide
 
 ### ⏱️ CMEK Registration Wait Time
 
-**Wait 15 minutes** after CMEK registration before creating Data Stores. The configuration includes a 15-minute wait (`900s`) by default. If you encounter `INITIALIZING` errors, the CMEK config hasn't propagated yet.
+**Wait 20 minutes** after CMEK registration before creating Data Stores. The configuration includes a 15-minute wait (`900s`) by default. If you encounter `INITIALIZING` errors, the CMEK config hasn't propagated yet so retry with a `terraform apply`.
+```bash
+The location-level TP for `projects/123456789012/locations/us` is not READY; current state is INITIALIZING."
+```
 
 ### 🔐 Multi-Region Requirement
 
@@ -142,7 +145,7 @@ gcloud projects get-iam-policy $PROJECT_ID \
 ```
 
 ### CMEK Registration Fails with "INITIALIZING"
-Wait 15 minutes after CMEK registration. The configuration includes this wait time automatically.
+Wait 20 minutes after CMEK registration. The configuration includes this wait time automatically.
 
 ### Data Store Creation Fails
 Ensure `create_data_store = true` is set after the 15-minute CMEK wait period.
